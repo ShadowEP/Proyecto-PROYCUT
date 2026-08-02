@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Secretos y variables locales
+.env
+.env.*
+!.env.example
+
+# Dependencias y compilados futuros
+node_modules/
+dist/
+build/
+coverage/
+
+# Temporales y registros
+*.log
+*.tmp
+*.bak
+*~

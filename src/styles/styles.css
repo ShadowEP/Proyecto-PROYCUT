@@ -1,0 +1,476 @@
+  :root{
+    --azul:#1e3a5f; --azul2:#2c5282; --gris:#f4f5f7; --borde:#d7dbe0;
+    --texto:#1f2430; --verde:#16a34a; --rojo:#dc2626; --amarillo:#fef3c7; --amarillo-borde:#f2c94c;
+    --fuente: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --fondo:#ffffff; --radio:10px; --fs-h1:16px; --fs-h2:15px; --fondo-total:#eef2ff;
+    --piezas-fs:12px; --piezas-header-bg:#f4f5f7; --piezas-header-color:#1f2430;
+    --piezas-borde-color:#d7dbe0; --piezas-borde-grosor:1px; --piezas-alto:340px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family: var(--fuente);
+    background:var(--fondo); color:var(--texto); margin:0;
+  }
+  .top-sub{
+    color:#6b7280; font-size:12px; padding:6px 24px; text-align:center;
+    background:var(--gris); border-bottom:1px solid var(--borde);
+  }
+  header{
+    display:grid; grid-template-columns:1fr auto 1fr; align-items:center;
+    padding:14px 24px; border-bottom:1px solid var(--borde); position:sticky; top:0; min-height:24px;
+    background:#fff; z-index:100;
+  }
+  header .brand{
+    font-size:16px; font-weight:800; letter-spacing:.5px; color:#111; justify-self:start;
+    cursor:pointer; line-height:1; margin:0;
+  }
+  header .brand:hover{color:var(--azul2);}
+  header h1{font-size:16px; font-weight:700; line-height:1; margin:0; color:var(--azul); justify-self:center; white-space:nowrap;}
+  /* menu del encabezado, minimalista: solo texto (sin fondo ni borde de boton), como los enlaces
+     "Materiales", "Preferencias" y "Ayuda" (con su desplegable) y "Mi cuenta" a la derecha, en su
+     tamano original (mas chico que el logo y el titulo del centro, que son los dos que comparten
+     el mismo tamano grande entre si). */
+  .header-actions{display:flex; align-items:center; gap:22px; justify-self:end;}
+  .nav-item{position:relative; display:flex; align-items:center;}
+  .header-link{
+    font-family:inherit; background:none; border:none; margin:0; padding:0; font-size:13px;
+    font-weight:700; color:#374151; cursor:pointer; text-transform:none; letter-spacing:normal;
+    box-shadow:none; text-decoration:none; line-height:1; height:auto; vertical-align:middle;
+    -webkit-appearance:none; appearance:none; display:inline-flex; align-items:center; gap:6px;
+  }
+  .header-link:hover{color:var(--azul2);}
+  .header-link.active{color:var(--azul2);}
+  .header-icon{width:15px; height:15px; flex-shrink:0;}
+  .header-dropdown{
+    display:none; flex-direction:column; gap:1px; position:absolute; top:100%; right:0;
+    margin-top:12px; background:#fff; border:1px solid var(--borde); border-radius:10px;
+    box-shadow:0 10px 28px rgba(0,0,0,.13); min-width:210px; padding:6px; z-index:80;
+  }
+  .header-dropdown.abierto{display:flex;}
+  .dd-item{
+    font-family:inherit; background:none; border:none; text-align:left; padding:9px 12px; font-size:13px;
+    font-weight:600; color:#374151; border-radius:6px; cursor:pointer; width:100%;
+    text-transform:none; letter-spacing:normal; box-shadow:none; text-decoration:none;
+    line-height:1.3; height:auto; -webkit-appearance:none; appearance:none;
+  }
+  .dd-item:hover{background:var(--gris);}
+  .dd-item.active{background:var(--azul2); color:#fff;}
+  /* boton de 3 rayitas: oculto en pantallas anchas, solo aparece en pantallas chicas (ver media
+     query mas abajo) para colapsar el menu de texto (Materiales/Preferencias/Ayuda/Mi cuenta). */
+  .hamburger-btn{
+    display:none; background:none; border:none; padding:6px; margin:0; cursor:pointer;
+    color:#374151; justify-self:end; -webkit-appearance:none; appearance:none;
+  }
+  .hamburger-btn svg{width:22px; height:22px; display:block;}
+  .hamburger-btn:hover{color:var(--azul2);}
+  @media (max-width: 860px){
+    header{grid-template-columns:auto 1fr auto; padding:12px 16px;}
+    .hamburger-btn{display:inline-flex;}
+    .header-actions{
+      display:none; position:absolute; top:100%; left:0; right:0; grid-column:1/-1;
+      flex-direction:column; align-items:stretch; gap:0; background:#fff;
+      border-top:1px solid var(--borde); border-bottom:1px solid var(--borde);
+      box-shadow:0 10px 28px rgba(0,0,0,.13); padding:6px; z-index:90;
+    }
+    .header-actions.abierto{display:flex;}
+    .nav-item{flex-direction:column; align-items:stretch; width:100%;}
+    .header-link{width:100%; padding:11px 8px; justify-content:flex-start;}
+    .header-dropdown{
+      display:none; position:static; margin-top:0; box-shadow:none; border:none;
+      min-width:0; width:100%; padding:0 0 0 30px;
+    }
+    .header-dropdown.abierto{display:flex;}
+    #toggleMiCuenta{width:100%; padding:11px 8px; justify-content:flex-start;}
+  }
+  .occ-wrap{max-width:1600px; margin:0 auto; padding:8px 24px 0;}
+  .sub{color:#6b7280; font-size:14px; margin:0 0 20px;}
+  .split{display:flex; align-items:flex-start; width:100%;}
+  /* cuando esta abierto un panel del menu (Material, Componentes, etc.), se oculta por completo
+     el contenido de piezas/diagrama para no dejar un espacio en blanco enorme antes de lo que
+     venga despues en la pagina de WordPress (por ejemplo el footer). */
+  .split.oculto{display:none;}
+  .split-col{width:50%; box-sizing:border-box; padding:10px 24px 40px;}
+  .split-col.derecha{
+    background:#fafbfc; border-left:1px solid var(--borde);
+    position:sticky; top:0; align-self:flex-start;
+    max-height:100vh; overflow-y:auto;
+  }
+  .split-inner{max-width:800px; margin:0 auto;}
+  .split-col.derecha .split-inner{max-width:980px;}
+  /* barra vertical para arrastrar y cambiar el ancho relativo entre las 2 columnas (piezas/precio
+     a la izquierda, diagrama/botones a la derecha). Solo una franja delgada visible al centro. */
+  .split-resizer{
+    flex:0 0 6px; width:6px; align-self:stretch; cursor:col-resize; position:relative; z-index:10;
+  }
+  .split-resizer::after{
+    content:''; position:absolute; top:0; bottom:0; left:2px; width:2px; background:var(--borde);
+  }
+  .split-resizer:hover::after, .split-resizer.arrastrando::after{background:var(--azul2); width:3px; left:1.5px;}
+  @media (max-width:1050px){
+    .split{flex-direction:column;}
+    .split-col{width:100% !important;}
+    .split-col.derecha{
+      border-left:none; border-top:1px solid var(--borde);
+      position:static; max-height:none; overflow-y:visible;
+    }
+    .split-resizer{display:none;}
+  }
+  .panel{border:1px solid var(--borde); border-radius:var(--radio); padding:16px; margin-bottom:18px; background:#fff;}
+  .panel h2{font-size:var(--fs-h2); margin:0 0 12px; color:var(--azul2);}
+  .config-panel{display:none; background:#fbfbfc;}
+  .config-panel.open{display:block;}
+  /* paneles con boton "Guardar" fijo: el contenido (tablas, campos) se desplaza con su propia
+     barra y el boton de Guardar se queda siempre visible abajo, sin importar cuantas filas haya. */
+  .config-panel.open.panel-con-guardar{display:flex; flex-direction:column; max-height:75vh;}
+  .panel-con-guardar .panel-scroll{overflow-y:auto; flex:1 1 auto; min-height:0; padding-right:6px;}
+  .panel-con-guardar .panel-guardar-row{
+    flex:0 0 auto; margin-top:12px !important; padding-top:12px; border-top:1px solid var(--borde);
+  }
+  .config-row{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; margin-bottom:10px;}
+  .config-field label{display:block; font-size:11.5px; color:#555; margin-bottom:4px;}
+  .config-field input{width:100px; padding:6px 8px; border:1px solid var(--borde); border-radius:calc(var(--radio) * 0.6); font-size:13px;}
+  .config-field input[type=color]{width:56px; height:34px; padding:2px; cursor:pointer;}
+  .config-field input[type=checkbox]{width:15px; height:15px; margin:0;}
+  .config-field select{padding:6px 8px; border:1px solid var(--borde); border-radius:calc(var(--radio) * 0.6); font-size:12.5px;}
+  .config-sub{font-size:12.5px; font-weight:700; color:#374151; margin:12px 0 6px;}
+  .mini-table{width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:8px; table-layout:fixed;}
+  .mini-table td, .mini-table th{border:1px solid var(--borde); padding:5px 7px; overflow:hidden;}
+  .mini-table th{background:var(--gris);}
+  .mini-table input{width:90%; border:1px solid #e3e6ea; border-radius:4px; padding:3px 5px; font-size:12.5px;}
+  #tablaTapacantos th:nth-child(1), #tablaTapacantos td:nth-child(1),
+  #tablaComponentes th:nth-child(1), #tablaComponentes td:nth-child(1),
+  #tablaComponentesProyecto th:nth-child(1), #tablaComponentesProyecto td:nth-child(1){width:12%;}
+  #tablaTapacantos th:nth-child(2), #tablaTapacantos td:nth-child(2),
+  #tablaComponentes th:nth-child(2), #tablaComponentes td:nth-child(2),
+  #tablaComponentesProyecto th:nth-child(2), #tablaComponentesProyecto td:nth-child(2){width:48%;}
+  #tablaTapacantos th:nth-child(3), #tablaTapacantos td:nth-child(3),
+  #tablaComponentes th:nth-child(3), #tablaComponentes td:nth-child(3){width:22%;}
+  #tablaTapacantos th:nth-child(4), #tablaTapacantos td:nth-child(4),
+  #tablaComponentes th:nth-child(4), #tablaComponentes td:nth-child(4){width:18%;}
+  /* "Placas y tableros" tiene 7 columnas (SKU, Material, Largo, Ancho, Espesor, Precio, Quitar),
+     asi que necesita sus propios porcentajes en vez de compartir los de las tablas de 4 columnas. */
+  #tablaMateriales th:nth-child(1), #tablaMateriales td:nth-child(1){width:9%;}
+  #tablaMateriales th:nth-child(2), #tablaMateriales td:nth-child(2){width:24%;}
+  #tablaMateriales th:nth-child(3), #tablaMateriales td:nth-child(3){width:11%;}
+  #tablaMateriales th:nth-child(4), #tablaMateriales td:nth-child(4){width:11%;}
+  #tablaMateriales th:nth-child(5), #tablaMateriales td:nth-child(5){width:12%;}
+  #tablaMateriales th:nth-child(6), #tablaMateriales td:nth-child(6){width:17%;}
+  #tablaMateriales th:nth-child(7), #tablaMateriales td:nth-child(7){width:16%;}
+  /* si se oculta la columna Espesor (checkbox en "Ajuste de la interfaz"), se le quita el espacio
+     a esa columna y se reparte entre las demas para que la tabla siga ocupando el 100% del ancho. */
+  #tablaMateriales.oculta-espesor th:nth-child(5), #tablaMateriales.oculta-espesor td:nth-child(5){display:none;}
+  #tablaMateriales.oculta-espesor th:nth-child(1), #tablaMateriales.oculta-espesor td:nth-child(1){width:10%;}
+  #tablaMateriales.oculta-espesor th:nth-child(2), #tablaMateriales.oculta-espesor td:nth-child(2){width:27%;}
+  #tablaMateriales.oculta-espesor th:nth-child(3), #tablaMateriales.oculta-espesor td:nth-child(3){width:13%;}
+  #tablaMateriales.oculta-espesor th:nth-child(4), #tablaMateriales.oculta-espesor td:nth-child(4){width:13%;}
+  #tablaMateriales.oculta-espesor th:nth-child(6), #tablaMateriales.oculta-espesor td:nth-child(6){width:20%;}
+  #tablaMateriales.oculta-espesor th:nth-child(7), #tablaMateriales.oculta-espesor td:nth-child(7){width:17%;}
+  #tablaComponentesProyecto th:nth-child(2), #tablaComponentesProyecto td:nth-child(2){width:36%;}
+  #tablaComponentesProyecto th:nth-child(3), #tablaComponentesProyecto td:nth-child(3){width:12%;}
+  #tablaComponentesProyecto th:nth-child(4), #tablaComponentesProyecto td:nth-child(4){width:14%;}
+  #tablaComponentesProyecto th:nth-child(5), #tablaComponentesProyecto td:nth-child(5){width:14%;}
+  #tablaComponentesProyecto th:nth-child(6), #tablaComponentesProyecto td:nth-child(6){width:12%;}
+  /* la columna de Producto (nth-child 2) hereda 48% de la regla compartida de arriba, que en esta
+     tabla en concreto deja muy poco espacio (2%) para el boton "Quitar"; se le da un ancho minimo
+     en px para que el boton nunca quede recortado, y el envoltorio ".table-scroll" (que ya trae
+     overflow:auto) muestra una barra horizontal deslizable cuando la pantalla es mas angosta que
+     eso, en vez de aplastar las columnas. */
+  #tablaComponentesProyecto{min-width:560px;}
+
+  .table-scroll{max-height:var(--piezas-alto); overflow:auto; border:1px solid var(--piezas-borde-color); border-radius:calc(var(--radio) * 0.8);}
+  table.piezas{width:100%; border-collapse:collapse; font-size:var(--piezas-fs); font-weight:700;}
+  table.piezas th{
+    background:var(--piezas-header-bg); color:var(--piezas-header-color); text-align:center; padding:4px 3px;
+    border:var(--piezas-borde-grosor) solid var(--piezas-borde-color);
+    font-weight:700; font-size:calc(var(--piezas-fs) * 0.83); position:sticky; top:0; white-space:nowrap; z-index:3;
+  }
+  /* anchos de fabrica de cada columna (solo el punto de partida, no un minimo: se pueden seguir
+     achicando arrastrando el borde de la columna, como las demas). Elegidos para que los numeros
+     y las letras de cada campo se alcancen a ver completos sin tener que agrandar nada a mano.
+     Largo y Ancho tambien usan "data-w" en su <th> (igual que Material/Tapacanto mas abajo) porque
+     sin eso, el repartido automatico del navegador las apretaba mas angostas que estos 50px y los
+     numeros de 3 digitos (como 500 o 390) se veian recortados. Si se cambia este numero hay que
+     cambiar tambien el data-w de esos dos <th>. */
+  table.piezas th.col-num{width:34px;}
+  table.piezas th.col-cant{width:56px;}
+  table.piezas th.col-largo, table.piezas th.col-ancho{width:50px;}
+  table.piezas th.col-girar{width:44px;}
+  table.piezas th.col-girar input[type=checkbox]{width:14px; height:14px; margin:3px 0 0; cursor:pointer;}
+  table.piezas th.col-cantos{width:64px;}
+  table.piezas th.col-lado{width:34px;}
+  table.piezas th.col-etiqueta{width:130px;}
+  table.piezas th.col-quitar{width:88px;}
+  /* manija para arrastrar y cambiar el ancho de cada columna de la tabla de piezas (se agrega por
+     JS en cada th, menos en la ultima). Una franja delgada e invisible en el borde derecho del
+     encabezado, que se resalta al pasar el mouse o mientras se arrastra. */
+  .col-resize-handle{
+    position:absolute; top:0; right:-4px; width:8px; height:100%; cursor:col-resize; z-index:6;
+  }
+  .col-resize-handle:hover, .col-resize-handle.arrastrando{background:rgba(37,99,235,.25);}
+  /* etiqueta flotante que muestra el ancho en px mientras se arrastra el borde de una columna */
+  .col-resize-tooltip{
+    position:fixed; z-index:9999; transform:translate(-50%,-100%); background:#1f2937; color:#fff;
+    font-size:11px; font-weight:700; padding:3px 7px; border-radius:5px; pointer-events:none;
+    white-space:nowrap;
+  }
+  table.piezas td{border:var(--piezas-borde-grosor) solid var(--piezas-borde-color); padding:2px; text-align:center;}
+  /* sin ancho fijo en px ni min-width: cada campo llena el ancho real de su columna, se achique
+     lo que se achique (si el texto ya no cabe, mejor que se recorte a que se desborde). */
+  table.piezas input[type=text], table.piezas input[type=number], table.piezas select{
+    width:100%; min-width:0; box-sizing:border-box; border:1px solid #e3e6ea; border-radius:4px;
+    padding:3px 2px; font-size:var(--piezas-fs); font-weight:700; text-align:center;
+  }
+  table.piezas select{font-size:calc(var(--piezas-fs) * 0.92); font-weight:700;}
+  table.piezas td input[type=checkbox]{width:14px; height:14px; margin:0;}
+  /* 200px es solo el ancho INICIAL sugerido (no un minimo fijo): la columna todavia se puede
+     achicar libremente si el usuario arrastra el borde de la columna para hacerla mas angosta. El
+     ancho real que se aplica al cargar la pagina es el de "data-w" en el <th> (ver mas abajo en
+     activarColumnasRedimensionables), asi que si se cambia este numero hay que cambiar tambien el
+     data-w de esos dos <th> para que el cambio realmente se note. Las demas columnas de la tabla
+     "Piezas a cortar" no se tocan. */
+  table.piezas th.col-material, table.piezas th.col-tapatipo{width:160px;}
+  table.piezas .combo-material input[type=text], table.piezas .combo-tapatipo input[type=text]{width:100%;}
+  /* combobox buscable de Material / Tipo de tapacanto: un input de texto que abre una lista
+     flotante (posicionada con position:fixed para que no la recorte el scroll de la tabla). */
+  /* sin min-width: el box de Material/Tipo de tapacanto se ajusta al ancho real de la columna,
+     sin importar lo angosta que quede (incluso si eso trunca el texto de adentro). */
+  .combo{position:relative; min-width:0; max-width:100%;}
+  .combo-material, .combo-tapatipo{width:100%;}
+  .combo input[type=text]{
+    width:100%; min-width:0; box-sizing:border-box; border:1px solid #e3e6ea; border-radius:4px; padding:3px 20px 3px 6px;
+    font-size:calc(var(--piezas-fs) * 0.92); font-weight:700; text-align:center; cursor:pointer;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    background:#fff url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23666' d='M5.5 7.5l4.5 4.5 4.5-4.5z'/%3E%3C/svg%3E") no-repeat right 4px center/14px 14px;
+  }
+  /* el buscador de "Componente" en Agregar componentes va del mismo tamano que su vecino
+     "Cantidad" (que usa el estilo general .config-field input), no del tamano compacto que usan
+     los buscadores de Material/Tapacanto dentro de la tabla de piezas. */
+  #agregarComponentePanel .combo input[type=text]{
+    padding:6px 24px 6px 10px; font-size:13px; font-weight:400; text-align:left;
+    border:1px solid var(--borde); border-radius:calc(var(--radio) * 0.6);
+  }
+  .combo-flotante{
+    position:fixed; z-index:9999; display:none; min-width:140px;
+    max-height:200px; overflow-y:auto; background:#fff; border:1px solid var(--borde);
+    border-radius:6px; box-shadow:0 4px 14px rgba(0,0,0,.15); text-align:left;
+  }
+  .combo-flotante.abierto{display:block;}
+  .combo-item{padding:6px 10px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; color:#1f2430;}
+  .combo-item:hover, .combo-item.resaltado{background:var(--gris);}
+  .combo-item.sin-resultados{color:#9ca3af; cursor:default; font-weight:400;}
+  /* opcion para dar de alta, directo desde el buscador, lo que se acaba de escribir cuando no
+     coincide con nada ya existente (ver "Crear nuevo desde el buscador" en el script). */
+  .combo-item.combo-item-crear{color:var(--azul2); border-top:1px solid var(--borde);}
+  .combo-item.combo-item-crear:hover{background:var(--gris);}
+  /* ventana modal para confirmar y capturar el precio antes de crear ese Material/Tapacanto/
+     Componente nuevo (se muestra por encima de todo lo demas, con fondo oscurecido detras). */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:10000;
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.abierto{display:flex;}
+  .modal-caja{
+    background:#fff; border-radius:var(--radio); padding:20px; max-width:360px; width:100%;
+    box-shadow:0 10px 30px rgba(0,0,0,.3);
+  }
+  .modal-titulo{margin:0 0 10px; font-size:15px; color:var(--texto);}
+  .modal-aviso{
+    background:var(--amarillo); border:1px solid var(--amarillo-borde); border-radius:8px;
+    padding:8px 10px; font-size:12px; color:#5c4a03; line-height:1.5; margin:0 0 14px;
+  }
+  .import-preview{
+    display:none; margin-top:16px; padding-top:14px; border-top:1px solid var(--borde);
+  }
+  .import-preview.abierto{display:block;}
+  .import-preview-opciones{
+    display:grid; grid-template-columns:repeat(3,minmax(180px,1fr)); gap:12px; margin-bottom:12px;
+  }
+  .import-preview-opciones label{display:block; font-size:11.5px; color:#555; margin-bottom:4px;}
+  .import-preview-opciones select{
+    width:100%; padding:7px 8px; border:1px solid var(--borde); border-radius:6px; background:#fff;
+  }
+  .import-preview-check{display:flex; align-items:center; gap:8px; min-height:34px; font-size:12.5px;}
+  .import-preview-check input{width:15px; height:15px;}
+  .import-preview-tabla-wrap{overflow:auto; max-height:380px; border:1px solid var(--borde); border-radius:7px;}
+  #tablaVistaPreviaComponentes{min-width:1900px; margin:0;}
+  #tablaVistaPreviaComponentes th{position:sticky; top:0; z-index:2;}
+  #tablaVistaPreviaComponentes td{vertical-align:top; white-space:normal;}
+  #tablaVistaPreviaComponentes select{max-width:190px; padding:4px;}
+  .import-estado-ok{color:#166534; font-weight:700;}
+  .import-estado-warn{color:#92400e; font-weight:700;}
+  .import-estado-error{color:#b91c1c; font-weight:700;}
+  @media (max-width:800px){
+    .import-preview-opciones{grid-template-columns:1fr;}
+  }
+  /* checkbox de 3 estados para la columna Girar: vacio=Auto, raya=Normal, marcado=Girar 90 */
+  .girar-check{
+    display:inline-block; width:15px; height:15px; border:1.5px solid #767676; border-radius:3px;
+    background:#fff; cursor:pointer; position:relative; vertical-align:middle;
+  }
+  .girar-check:hover{border-color:var(--azul2);}
+  .girar-check[data-modo="normal"]{border-color:var(--azul2);}
+  .girar-check[data-modo="normal"]::after{
+    content:''; position:absolute; left:2px; right:2px; top:50%; height:2px; background:var(--azul2); transform:translateY(-1px);
+  }
+  .girar-check[data-modo="rotado"]{background:var(--azul2); border-color:var(--azul2);}
+  .girar-check[data-modo="rotado"]::after{
+    content:''; position:absolute; left:4px; top:1px; width:4px; height:8px;
+    border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg);
+  }
+  /* selector visual de cantos (tapacanto): un rectangulo en miniatura con sus 4 lados en forma
+     de marco/inglete, donde cada lado se puede activar/desactivar con un clic, en vez de 4
+     checkboxes sueltos (L1/L2/A1/A2). El lado activo se pinta del mismo rojo que usa el
+     diagrama de corte para el tapacanto, para que se entienda de un vistazo. */
+  /* el icono de cantos tambien se ajusta al ancho real de su columna (hasta un maximo de 44px,
+     su tamano "normal"), en vez de quedarse siempre fijo en 44px sin importar que tan angosta
+     quede la columna. */
+  .canto-selector{display:block; line-height:0; max-width:44px; margin:0 auto;}
+  .canto-selector svg{display:block; width:100%; height:auto;}
+  .canto-seg{fill:#e5e7eb; stroke:#94a3b8; stroke-width:0.6; cursor:pointer; transition:fill .1s;}
+  .canto-seg:hover{fill:#cbd5e1;}
+  .canto-seg.activo{fill:#dc2626; stroke:#b91c1c;}
+  .canto-seg.activo:hover{fill:#ef4444;}
+  .canto-centro{fill:#fff; stroke:#94a3b8; stroke-width:0.6; pointer-events:none;}
+  /* reset fuerte contra los estilos de boton que trae el tema de WordPress (Flatsome), que si no
+     se anulan aqui le agregan mayusculas, sombra, borde grueso o mas alto/ancho al boton real. */
+  .btn{
+    background:var(--azul2); color:#fff; border:none; padding:9px 16px; border-radius:calc(var(--radio) * 0.7); font-size:13px;
+    cursor:pointer; font-weight:600; text-transform:none; letter-spacing:normal; box-shadow:none;
+    text-decoration:none; line-height:1.3; height:auto; width:auto; min-width:0; min-height:0;
+    -webkit-appearance:none; appearance:none; display:inline-block; vertical-align:middle;
+  }
+  .btn:hover{background:var(--azul);}
+  .btn:focus{outline:2px solid var(--azul2); outline-offset:1px; box-shadow:none;}
+  .btn.secondary{background:#fff; color:var(--azul2); border:1px solid var(--azul2);}
+  .btn.wide{padding:14px 20px; font-size:14px; flex:1;}
+  .btn.sm{padding:6px 12px; font-size:11.5px; border-radius:calc(var(--radio) * 0.6);}
+  .btn.danger{background:#fff; color:var(--rojo); border:1px solid var(--rojo); padding:4px 6px; font-size:11px;}
+  .btn.danger:hover{background:#fdecec;}
+  .btn.danger:focus{outline-color:var(--rojo);}
+  .btn-row{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;}
+  .info-chip{
+    display:inline-block; background:var(--amarillo); border:1px solid var(--amarillo-borde); color:#5c4a03;
+    font-size:10px; font-weight:600; padding:3px 8px; border-radius:999px; cursor:pointer; margin-top:10px;
+    white-space:nowrap; flex:0 0 auto;
+  }
+  .info-chip:hover{background:#fbe9a8;}
+  .icon-btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:5px; height:26px;
+    background:#fff; border:1px solid var(--borde); color:#475569; border-radius:6px; cursor:pointer;
+    padding:0 9px; flex:0 0 auto; margin-top:0; font-size:11px; font-weight:600; white-space:nowrap;
+  }
+  .icon-btn:hover{background:var(--gris); color:#1e293b;}
+  .icon-btn svg{width:14px; height:14px; display:block; flex:0 0 auto;}
+  .info-panel{
+    display:none; background:var(--amarillo); border:1px solid var(--amarillo-borde); border-radius:8px;
+    padding:8px 10px; font-size:11.5px; color:#5c4a03; margin-top:6px; line-height:1.5;
+  }
+  /* box de "Cantidad de proyectos", arriba de la tabla de Piezas a cortar: multiplica la cantidad
+     de cada pieza y cada componente al calcular (no toca lo que hay escrito en las tablas). */
+  .cantidad-proyectos-box{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--gris);
+    border:1px solid var(--borde); border-radius:8px; padding:8px 12px; margin:12px 0 0;
+  }
+  .cantidad-proyectos-box label{font-size:12.5px; font-weight:700; color:var(--texto); white-space:nowrap;}
+  .cantidad-proyectos-box input{
+    width:64px; box-sizing:border-box; border:1px solid #e3e6ea; border-radius:4px; padding:4px 6px;
+    font-size:13px; font-weight:700; text-align:center;
+  }
+  .cantidad-proyectos-box .sub{margin:0; font-size:11px; color:#6b7280; line-height:1.4;}
+  .subpanel{
+    display:none; background:#fbfbfc; border:1px solid var(--borde); border-radius:calc(var(--radio) * 0.8);
+    padding:12px; margin-top:10px;
+  }
+  .subpanel.open{display:block;}
+  .tabs{
+    display:flex; flex-wrap:nowrap; gap:5px; margin:0;
+    overflow-x:auto; overflow-y:hidden; padding-bottom:6px;
+    scrollbar-width:thin; scrollbar-color:var(--azul2) var(--gris);
+    flex:1 1 auto; min-width:80px;
+  }
+  .tabs::-webkit-scrollbar{height:8px;}
+  .tabs::-webkit-scrollbar-track{background:var(--gris); border-radius:4px;}
+  .tabs::-webkit-scrollbar-thumb{background:var(--azul2); border-radius:4px;}
+  .tab-btn{
+    background:var(--gris); border:1px solid var(--borde); color:#374151; padding:0.4em 0.8em;
+    border-radius:calc(var(--radio) * 0.5); font-size:10px; cursor:pointer; font-weight:600; flex:0 0 auto; white-space:nowrap;
+  }
+  .tab-btn.active{background:var(--azul); color:#fff; border-color:var(--azul);}
+  .board-svg-outer{position:relative;}
+  .board-svg-wrap{
+    border:1px solid var(--borde); border-radius:calc(var(--radio) * 0.8); padding:10px; background:#fafbfc;
+    overflow:auto; display:flex; justify-content:center; box-sizing:border-box;
+  }
+  .espejo-menu-wrap{position:relative; margin:10px 0; z-index:15;}
+  .board-svg-espejo{background:#ffffffee; box-shadow:0 1px 4px rgba(0,0,0,0.15);}
+  .espejo-menu{
+    display:none; position:absolute; left:0; bottom:32px; background:#fff; border:1px solid var(--borde);
+    border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,0.18); padding:5px; min-width:150px;
+  }
+  .espejo-menu.abierto{display:flex; flex-direction:column; gap:2px;}
+  .espejo-opcion{
+    display:flex; align-items:center; gap:8px; background:none; border:none; text-align:left;
+    padding:7px 8px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; color:#374151;
+  }
+  .espejo-opcion:hover{background:var(--gris);}
+  .espejo-opcion svg{width:14px; height:14px; flex:0 0 auto; color:#475569;}
+  /* menu desplegable del boton "Archivo", que agrupa "Exportar formato" e "Importar" en un solo
+     boton (mismo patron visual que el menu de Espejo del diagrama, pero se abre hacia abajo). */
+  .archivo-menu-wrap{position:relative; display:inline-block;}
+  .archivo-menu{
+    display:none; position:absolute; left:0; top:calc(100% + 6px); background:#fff; border:1px solid var(--borde);
+    border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,0.18); padding:5px; min-width:170px; z-index:15;
+  }
+  .archivo-menu.abierto{display:flex; flex-direction:column; gap:2px;}
+  .archivo-opcion{
+    display:block; width:100%; background:none; border:none; text-align:left;
+    padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; color:#374151;
+    white-space:nowrap;
+  }
+  .archivo-opcion:hover{background:var(--gris);}
+  .board-svg-wrap svg{height:auto; display:block;}
+  .pieza-rotar{opacity:0; pointer-events:none; transition:opacity .12s; cursor:pointer;}
+  .pieza-drag:hover .pieza-rotar{opacity:1; pointer-events:auto;}
+  .pieza-rotar:hover circle{fill:#eef2ff;}
+  svg text{font-family:inherit;}
+  .sobrantes{font-size:12px; margin-top:10px; color:#444;}
+  .sobrantes b{color:#1f2430;}
+  .sobrantes .item{display:inline-block; margin:2px 10px 2px 0;}
+  .cost-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-top:4px;}
+  @media (max-width:600px){.cost-grid{grid-template-columns:1fr;}}
+  .cost-col h3{font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.4px; margin:0 0 4px;}
+  .cost-line{display:flex; justify-content:space-between; font-size:12.5px; padding:2.5px 0; border-bottom:1px dashed #e5e7eb; line-height:1.25;}
+  .cost-line.sub{font-weight:700; border-bottom:none; margin-top:2px;}
+  .total-bar{display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding:10px 14px; background:var(--fondo-total); border-radius:calc(var(--radio) * 0.8);}
+  .total-bar span.label{font-size:14px; font-weight:700; color:var(--azul);}
+  .total-bar span.amount{font-size:20px; font-weight:800; color:var(--azul);}
+  .total-bar.tb-solido{background:var(--azul2);}
+  .total-bar.tb-solido span.label, .total-bar.tb-solido span.amount{color:#fff;}
+  .total-bar.tb-contorno{background:#fff; border:2px solid var(--azul2);}
+  .total-bar.tb-contorno span.label, .total-bar.tb-contorno span.amount{color:var(--azul2);}
+  .total-bar.tb-linea{background:transparent; border:none; border-top:2px solid var(--borde); border-radius:0; padding:10px 2px 0;}
+  .total-bar.tb-linea span.label{color:#6b7280; font-weight:600;}
+  .total-bar.tb-linea span.amount{color:var(--azul);}
+  .warn{color:var(--rojo); font-size:12.5px; margin-top:8px;}
+
+  .reporte-lista{max-width:560px;}
+  .reporte-lista .rl-titulo{font-size:11.5px; font-weight:700; color:var(--azul2); text-transform:uppercase; letter-spacing:.4px; margin:8px 0 2px; padding-top:6px; border-top:1px solid var(--borde);}
+  .reporte-lista .rl-seccion:first-child .rl-titulo{border-top:none; padding-top:0; margin-top:0;}
+
+  .reporte-tarjetas{display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px; margin-top:4px;}
+  @media (max-width:600px){.reporte-tarjetas{grid-template-columns:1fr;}}
+  .rt-card{background:#fff; border:1px solid var(--borde); border-radius:var(--radio); padding:10px 12px; border-top:4px solid var(--azul2); box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .rt-card.rt-componentes{border-top-color:#7c3aed;}
+  .rt-card.rt-corte{border-top-color:#ea580c;}
+  .rt-card.rt-tapa{border-top-color:#0d9488;}
+  .rt-card h3{font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.4px; margin:0 0 4px;}
+  .rt-card .rt-subtotal{margin-top:5px; padding-top:5px; border-top:1px dashed #e5e7eb; display:flex; justify-content:space-between; font-weight:700; font-size:13px; color:var(--azul);}
+
+  .reporte-factura table{width:100%; border-collapse:collapse; margin-top:2px; font-size:12.5px;}
+  .reporte-factura th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:#6b7280; padding:4px 8px; border-bottom:2px solid var(--azul);}
+  .reporte-factura th.num, .reporte-factura td.num{text-align:right;}
+  .reporte-factura td{padding:3.5px 8px; border-bottom:1px solid #e5e7eb; line-height:1.2;}
+  .reporte-factura tr.rf-seccion td{background:var(--gris); font-weight:700; color:var(--azul2); font-size:11px; text-transform:uppercase; letter-spacing:.3px; padding:3px 8px;}
+  .reporte-factura tr.rf-sub td{font-weight:700; border-bottom:2px solid var(--borde);}
+  .footer-actions{display:flex; flex-wrap:wrap; gap:12px; margin-top:16px;}
+  .footer-actions .btn.wide{min-width:150px;}

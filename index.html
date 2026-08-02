@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimizador de Cortes - Bamteck</title>
+<link rel="stylesheet" href="./src/styles/styles.css">
+</head>
+<body>
+<header>
+  <div class="brand" id="brandHome" title="Ir a la pantalla principal del optimizador de cortes (piezas, diagrama y precio)">PROYECUT XIX</div>
+  <h1>BAMTECK</h1>
+  <div class="header-actions" id="headerActions">
+    <div class="nav-item">
+      <button class="header-link" id="toggleMaterialesMenu" aria-expanded="false" aria-controls="materialesDropdown">
+        <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+        Materiales
+      </button>
+      <div class="header-dropdown" id="materialesDropdown">
+        <button class="dd-item" id="toggleTableros">Placas y tableros</button>
+        <button class="dd-item" id="toggleCubrecanto">Cubre canto</button>
+        <button class="dd-item" id="toggleComponentes">Componentes</button>
+      </div>
+    </div>
+    <div class="nav-item">
+      <button class="header-link" id="togglePreferenciasMenu" aria-expanded="false" aria-controls="preferenciasDropdown">
+        <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+        Preferencias
+      </button>
+      <div class="header-dropdown" id="preferenciasDropdown">
+        <button class="dd-item" id="toggleEstilo" title="Personalizar apariencia (colores, letra y tamaños de la interfaz)">Ajuste de la interfaz</button>
+        <button class="dd-item" id="toggleConfig" title="Grosor de corte, precio por corte y tablero">Ajustes de parámetros de corte</button>
+      </div>
+    </div>
+    <div class="nav-item">
+      <button class="header-link" id="toggleAyudaMenu" aria-expanded="false" aria-controls="ayudaDropdown">
+        <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        Ayuda
+      </button>
+      <div class="header-dropdown" id="ayudaDropdown">
+        <button class="dd-item" id="toggleAcademia">Academia</button>
+        <button class="dd-item" id="toggleCentroAyuda">Centro de ayuda</button>
+      </div>
+    </div>
+    <button class="header-link" id="toggleMiCuenta">Mi cuenta</button>
+  </div>
+  <button class="hamburger-btn" id="hamburgerBtn" aria-expanded="false" aria-controls="headerActions" title="Menu" aria-label="Abrir menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+  </button>
+</header>
+
+<div class="combo-flotante" id="comboFlotante"></div>
+
+<!-- ventana para confirmar y capturar el precio al crear un Material / Tapacanto / Componente
+     nuevo directo desde el buscador, cuando lo que se escribio no coincide con nada ya dado de
+     alta (ver "Crear nuevo desde el buscador" mas abajo en el script). -->
+<div class="modal-overlay" id="modalCrearOverlay">
+  <div class="modal-caja">
+    <h3 class="modal-titulo" id="modalCrearTitulo">Crear nuevo</h3>
+    <p class="modal-aviso" id="modalCrearAviso"></p>
+    <div class="config-field">
+      <label>Precio</label>
+      <input type="number" id="modalCrearPrecio" min="0" step="0.5" value="0">
+    </div>
+    <div class="btn-row" style="justify-content:flex-end; margin-top:14px;">
+      <button class="btn secondary sm" id="modalCrearCancelar">Cancelar</button>
+      <button class="btn sm" id="modalCrearGuardar">Sí, crearlo y usarlo</button>
+    </div>
+  </div>
+</div>
+
+<div class="occ-wrap">
+  <div class="panel config-panel panel-con-guardar" id="tablerosPanel">
+    <h2>Placas y tableros</h2>
+    <div class="panel-scroll">
+      <table class="mini-table" id="tablaMateriales">
+        <thead><tr><th>SKU</th><th>Material</th><th title="Medida del tablero/placa de este material, tal como viene de fabrica (se usa para el diagrama y el acomodo de piezas de este material)">Largo (mm)</th><th title="Medida del tablero/placa de este material, tal como viene de fabrica (se usa para el diagrama y el acomodo de piezas de este material)">Ancho (mm)</th><th title="Espesor o grosor del tablero, solo como referencia (no afecta el calculo ni el diagrama)">Espesor (mm)</th><th>Precio / tablero</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <button class="btn secondary" id="addMaterial" style="font-size:12px;padding:6px 10px;">+ Agregar material</button>
+    </div>
+    <div class="btn-row panel-guardar-row" style="justify-content:flex-end;">
+      <button class="btn" id="guardarTablerosBtn">Guardar</button>
+    </div>
+  </div>
+  <div class="panel config-panel panel-con-guardar" id="cubrecantoPanel">
+    <h2>Cubre canto</h2>
+    <div class="panel-scroll">
+      <table class="mini-table" id="tablaTapacantos">
+        <thead><tr><th>SKU</th><th>Tipo</th><th>Precio / metro</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <button class="btn secondary" id="addTapacanto" style="font-size:12px;padding:6px 10px;">+ Agregar tipo</button>
+    </div>
+    <div class="btn-row panel-guardar-row" style="justify-content:flex-end;">
+      <button class="btn" id="guardarCubrecantoBtn">Guardar</button>
+    </div>
+  </div>
+  <div class="panel config-panel panel-con-guardar" id="componentesPanel">
+    <h2>Componentes</h2>
+    <div class="panel-scroll">
+      <table class="mini-table" id="tablaComponentes">
+        <thead><tr><th>SKU</th><th>Producto</th><th>Precio</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <button class="btn secondary" id="addComponente" style="font-size:12px;padding:6px 10px;">+ Agregar componente</button>
+      <p class="sub" style="margin:10px 0 0; font-size:11.5px;">Ejemplos: BISAGRAS, CORREDERAS, JALADERAS, PIJAS, PEGAMENTO, CLAVILLO, ETC.</p>
+    </div>
+    <div class="btn-row panel-guardar-row" style="justify-content:flex-end;">
+      <button class="btn" id="guardarComponentesBtn">Guardar</button>
+    </div>
+  </div>
+  <div class="panel config-panel panel-con-guardar" id="estiloPanel">
+    <h2>Ajuste de la interfaz</h2>
+    <div class="panel-scroll">
+
+    <div class="config-sub">Interfaz general</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Fuente de la interfaz</label>
+        <select id="fuenteInterfaz">
+          <option value="sistema">Predeterminada (sistema)</option>
+          <option value="arial">Arial</option>
+          <option value="georgia">Georgia (con serifa)</option>
+          <option value="verdana">Verdana</option>
+          <option value="tahoma">Tahoma</option>
+          <option value="monoespaciada">Monoespaciada</option>
+        </select>
+      </div>
+      <div class="config-field">
+        <label>Color principal</label>
+        <input type="color" id="colorPrincipal" value="#1e3a5f">
+      </div>
+      <div class="config-field">
+        <label>Color secundario</label>
+        <input type="color" id="colorSecundario" value="#2c5282">
+      </div>
+      <div class="config-field">
+        <label>Color de fondo</label>
+        <input type="color" id="colorFondo" value="#ffffff">
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Tamaño del título principal</label>
+        <input type="number" id="fsTituloPrincipal" value="16" min="12" max="28" step="1">
+      </div>
+      <div class="config-field">
+        <label>Tamaño de los títulos de sección</label>
+        <input type="number" id="fsTituloSeccion" value="15" min="12" max="24" step="1">
+      </div>
+      <div class="config-field">
+        <label>Formato de esquinas (px)</label>
+        <input type="number" id="radioEsquinas" value="10" min="0" max="20" step="1">
+      </div>
+    </div>
+
+    <div class="config-sub">Colores del diagrama</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Piezas cortadas 1</label>
+        <input type="color" id="colorPieza" value="#2563eb">
+      </div>
+      <div class="config-field">
+        <label>Piezas cortadas 2 (alterna)</label>
+        <input type="color" id="colorPieza2" value="#6b7280">
+      </div>
+      <div class="config-field">
+        <label>Flecha de sobrante 1</label>
+        <input type="color" id="colorSobrante" value="#ea580c">
+      </div>
+      <div class="config-field">
+        <label>Flecha de sobrante 2 (alterna)</label>
+        <input type="color" id="colorSobrante2" value="#0d9488">
+      </div>
+    </div>
+
+    <div class="config-sub">Linea de corte (piezas)</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Estilo</label>
+        <select id="estiloLineaCorte">
+          <option value="solida">Linea recta</option>
+          <option value="punteada">Punteada (......)</option>
+          <option value="discontinua">Discontinua (- - - -)</option>
+        </select>
+      </div>
+      <div class="config-field">
+        <label>Grosor</label>
+        <input type="number" id="grosorCorte" value="1" min="0.5" max="4" step="0.5">
+      </div>
+    </div>
+
+    <div class="config-sub">Linea de enchapado</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Estilo</label>
+        <select id="estiloLineaTapacanto">
+          <option value="solida">Linea recta</option>
+          <option value="punteada">Punteada (......)</option>
+          <option value="discontinua">Discontinua (- - - -)</option>
+        </select>
+      </div>
+      <div class="config-field">
+        <label>Grosor</label>
+        <input type="number" id="grosorTapacanto" value="3" min="1" max="8" step="0.5">
+      </div>
+    </div>
+
+    <div class="config-sub">Linea y flecha de sobrantes</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Tipo de punta de flecha</label>
+        <select id="tipoFlechaSobrante">
+          <option value="triangulo">Triangulo (cerrada)</option>
+          <option value="abierta">Abierta (angulo)</option>
+          <option value="tick">Marca (tick)</option>
+        </select>
+      </div>
+      <div class="config-field">
+        <label>Tamano de la punta</label>
+        <input type="number" id="tamanoPuntaFlecha" value="6" min="3" max="14" step="1">
+      </div>
+      <div class="config-field">
+        <label>Estilo de la linea de la flecha</label>
+        <select id="estiloLineaSobrante">
+          <option value="solida">Linea recta</option>
+          <option value="punteada">Punteada (......)</option>
+          <option value="discontinua">Discontinua (- - - -)</option>
+        </select>
+      </div>
+      <div class="config-field">
+        <label>Grosor de la flecha</label>
+        <input type="number" id="grosorFlechaSobrante" value="1.3" min="0.5" max="4" step="0.1">
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Estilo de linea hasta la pieza</label>
+        <select id="estiloLineaHastaTope">
+          <option value="punteada">Punteada (......)</option>
+          <option value="discontinua">Discontinua (- - - -)</option>
+          <option value="solida">Linea recta</option>
+        </select>
+      </div>
+      <div class="config-field">
+        <label>Grosor linea hasta la pieza</label>
+        <input type="number" id="grosorLineaSobrante" value="0.6" min="0.3" max="3" step="0.1">
+      </div>
+    </div>
+
+    <div class="config-sub">Tamano de letra</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Medidas del tablero (mm)</label>
+        <input type="number" id="fsTablero" value="11" min="6" max="20" step="1">
+      </div>
+      <div class="config-field">
+        <label>Medidas de las piezas</label>
+        <input type="number" id="fsPiezaMedida" value="11" min="5" max="20" step="1">
+      </div>
+      <div class="config-field">
+        <label>Numero de pieza</label>
+        <input type="number" id="fsPiezaNum" value="13" min="6" max="24" step="1">
+      </div>
+      <div class="config-field">
+        <label>Medidas de sobrantes</label>
+        <input type="number" id="fsSobrante" value="8" min="6" max="14" step="1">
+      </div>
+    </div>
+
+    <div class="config-sub">Tamaño de tabs y diagrama</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Tamaño de las pestañas (px)</label>
+        <input type="number" id="fsTabs" value="10" min="8" max="18" step="1">
+      </div>
+      <div class="config-field">
+        <label>Tamaño del diagrama (%)</label>
+        <input type="number" id="escalaDiagrama" value="100" min="50" max="160" step="10">
+      </div>
+    </div>
+
+    <div class="config-sub">Tabla "Piezas a cortar"</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Tamaño de letra (px)</label>
+        <input type="number" id="fsTablaPiezas" value="12" min="9" max="16" step="1">
+      </div>
+      <div class="config-field">
+        <label>Color de encabezado</label>
+        <input type="color" id="colorHeaderPiezas" value="#f4f5f7">
+      </div>
+      <div class="config-field">
+        <label>Color de texto de encabezado</label>
+        <input type="color" id="colorTextoHeaderPiezas" value="#1f2430">
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Color de bordes</label>
+        <input type="color" id="colorBordePiezas" value="#d7dbe0">
+      </div>
+      <div class="config-field">
+        <label>Grosor de bordes (px)</label>
+        <input type="number" id="grosorBordePiezas" value="1" min="1" max="4" step="1">
+      </div>
+      <div class="config-field">
+        <label>Alto maximo de la tabla (px)</label>
+        <input type="number" id="altoTablaPiezas" value="340" min="200" max="800" step="20">
+      </div>
+    </div>
+
+    <div class="config-sub">Mostrar / ocultar</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="mostrarNumero" checked style="width:auto;">Numero de pieza</label>
+      </div>
+      <div class="config-field">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="mostrarMedidas" checked style="width:auto;">Medidas de piezas</label>
+      </div>
+      <div class="config-field">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="mostrarFlechas" checked style="width:auto;">Flechas de sobrantes</label>
+      </div>
+      <div class="config-field">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="mostrarListaSobrantes" checked style="width:auto;">Lista de sobrantes</label>
+      </div>
+    </div>
+
+    <div class="config-sub">Mostrar / ocultar botones</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="mostrarBtnAgregarComponente" checked style="width:auto;">+ Agregar componentes</label>
+      </div>
+      <div class="config-field">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="mostrarBtnArchivo" checked style="width:auto;">Archivo</label>
+      </div>
+      <div class="config-field">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="mostrarBtnEspejo" checked style="width:auto;">Espejo</label>
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="config-field">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="mostrarBtnExportar" checked style="width:auto;">Exportar</label>
+      </div>
+      <div class="config-field">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="mostrarBtnExportarDxf" checked style="width:auto;">Exportar DXF (CNC)</label>
+      </div>
+      <div class="config-field">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="mostrarBtnConfirmar" checked style="width:auto;">Confirmar pedido</label>
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="config-field">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="mostrarColumnaEspesor" checked style="width:auto;">Columna "Espesor (mm)" en Placas y tableros</label>
+      </div>
+    </div>
+
+    <div class="config-sub">Diseño de la tabla "Precio del proyecto"</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Plantilla del reporte</label>
+        <select id="plantillaReporte">
+          <option value="columnas">Columnas (predeterminado)</option>
+          <option value="lista">Lista compacta</option>
+          <option value="tarjetas">Tarjetas</option>
+          <option value="factura">Factura clasica</option>
+        </select>
+      </div>
+      <div class="config-field">
+        <label>Diseño del total</label>
+        <select id="disenoTotal">
+          <option value="pastel">Pastel (predeterminado)</option>
+          <option value="solido">Solido</option>
+          <option value="contorno">Contorno</option>
+          <option value="linea">Linea simple</option>
+        </select>
+      </div>
+      <div class="config-field">
+        <label>Color de fondo del total</label>
+        <input type="color" id="colorFondoTotal" value="#eef2ff">
+      </div>
+    </div>
+    </div>
+
+    <div class="btn-row panel-guardar-row" style="justify-content:flex-end;">
+      <button class="btn" id="guardarEstiloBtn">Guardar</button>
+    </div>
+  </div>
+  <div class="panel config-panel panel-con-guardar" id="configPanel">
+    <h2>Ajustes de parámetros de corte</h2>
+    <div class="panel-scroll">
+    <div class="config-sub">Kerf y márgenes exteriores</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label for="kerf">Kerf (mm)</label>
+        <input type="number" id="kerf" value="4" min="0" max="20" step="0.5">
+      </div>
+      <div class="config-field" style="flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="aplicarMargenesExteriores">
+        <label for="aplicarMargenesExteriores" style="margin:0;">Aplicar márgenes exteriores</label>
+      </div>
+      <div class="config-field" style="flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="mismoMargenExterior" checked disabled>
+        <label for="mismoMargenExterior" style="margin:0;">Usar el mismo margen en los cuatro lados</label>
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="config-field">
+        <label for="margenExteriorGeneral">Margen general (mm)</label>
+        <input type="number" id="margenExteriorGeneral" value="0" min="0" max="500" step="0.5" disabled>
+      </div>
+      <div class="config-field">
+        <label for="margenExteriorIzquierdo">Margen izquierdo (mm)</label>
+        <input type="number" id="margenExteriorIzquierdo" value="0" min="0" max="500" step="0.5" disabled>
+      </div>
+      <div class="config-field">
+        <label for="margenExteriorDerecho">Margen derecho (mm)</label>
+        <input type="number" id="margenExteriorDerecho" value="0" min="0" max="500" step="0.5" disabled>
+      </div>
+      <div class="config-field">
+        <label for="margenExteriorSuperior">Margen superior (mm)</label>
+        <input type="number" id="margenExteriorSuperior" value="0" min="0" max="500" step="0.5" disabled>
+      </div>
+      <div class="config-field">
+        <label for="margenExteriorInferior">Margen inferior (mm)</label>
+        <input type="number" id="margenExteriorInferior" value="0" min="0" max="500" step="0.5" disabled>
+      </div>
+    </div>
+    <p class="sub" style="margin:2px 0 0;">Los márgenes representan el saneado exterior del tablero y reducen el área disponible. No sustituyen el kerf entre piezas.</p>
+
+    <div class="config-sub">Medida predeterminada del tablero</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label title="Medida que se usa al agregar un material nuevo en 'Placas y tableros'. Cada material ya dado de alta puede tener su propia medida (columnas Largo/Ancho de esa tabla), asi que cambiar esto no afecta a los materiales que ya existen.">Largo de tablero por defecto (mm)</label>
+        <input type="number" id="tableroLargo" value="2440" min="1" step="1" style="width:110px;">
+      </div>
+      <div class="config-field">
+        <label title="Medida que se usa al agregar un material nuevo en 'Placas y tableros'. Cada material ya dado de alta puede tener su propia medida (columnas Largo/Ancho de esa tabla), asi que cambiar esto no afecta a los materiales que ya existen.">Ancho de tablero por defecto (mm)</label>
+        <input type="number" id="tableroAncho" value="1220" min="1" step="1" style="width:110px;">
+      </div>
+    </div>
+    <p class="sub" style="margin:2px 0 0;">Esta es solo la medida por defecto al crear un material nuevo. La medida real que se usa para acomodar y dibujar el diagrama de cada material es la que este configurada para ese material en "Placas y tableros".</p>
+
+    <div class="config-sub">Optimización</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Calidad del optimizador</label>
+        <div style="display:flex; gap:14px; align-items:center; font-size:13px; font-weight:600; flex-wrap:wrap;">
+          <label style="display:flex; align-items:center; gap:5px; margin:0;"><input type="radio" name="nivelOptimizacion" id="nivelOptimizacionNormal" value="normal" checked>Normal</label>
+          <label style="display:flex; align-items:center; gap:5px; margin:0;"><input type="radio" name="nivelOptimizacion" id="nivelOptimizacionOptimizada" value="optimizada">Optimizada</label>
+          <label style="display:flex; align-items:center; gap:5px; margin:0;"><input type="radio" name="nivelOptimizacion" id="nivelOptimizacionCompleta" value="completa">Completa</label>
+        </div>
+        <p class="sub" style="margin:6px 0 0;"><b>Normal:</b> optimiza el acomodo pero respeta la orientacion de cada pieza tal cual esta en la tabla (las piezas en Auto no se giran); recomendado cuando la veta o el diseño de la placa importa.<br><b>Optimizada:</b> permite girar 90° las piezas en Auto para aprovechar mejor el tablero, pero todas las copias de un mismo tamaño quedan en la misma orientacion entre si; buena opcion para materiales sin veta marcada donde igual conviene que el corte sea practico para quien opera la sierra.<br><b>Completa:</b> ademas de girar las piezas en Auto, permite que piezas idénticas queden en direcciones distintas entre sí, sin importar la veta, para exprimir al maximo el aprovechamiento del material.</p>
+      </div>
+    </div>
+
+    <div class="config-sub">Precio del corte</div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Cobrar el corte por</label>
+        <div style="display:flex; gap:14px; align-items:center; font-size:13px; font-weight:600;">
+          <label style="display:flex; align-items:center; gap:5px; margin:0;"><input type="radio" name="modoPrecioCorte" id="modoPrecioCortePorCorte" value="corte" checked>Por corte</label>
+          <label style="display:flex; align-items:center; gap:5px; margin:0;"><input type="radio" name="modoPrecioCorte" id="modoPrecioCortePorMetro" value="metro">Por metro lineal</label>
+        </div>
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>Precio por corte ($/corte)</label>
+        <input type="number" id="precioCorte" value="5" min="0" step="0.5">
+      </div>
+      <div class="config-field">
+        <label>Precio por metro lineal de corte ($/m)</label>
+        <input type="number" id="precioCorteMetro" value="20" min="0" step="0.5">
+      </div>
+    </div>
+
+    <div class="config-sub">Opciones de corte y tapacanto</div>
+    <div class="config-row">
+      <div class="config-field" style="flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="corteGuillotina" checked>
+        <label for="corteGuillotina" style="margin:0;" title="Activado: cada corte es una linea recta de lado a lado del tablero o de la franja (lo que necesita una sierra escuadradora). Desactivado: el optimizador puede acomodar piezas en huecos en forma de L para aprovechar mas material, pero esos cortes ya no sirven para sierra escuadradora (se necesita caladora, router o CNC).">Corte de extremo a extremo (sierra escuadradora)</label>
+      </div>
+    </div>
+    <p class="sub" style="margin:2px 0 0;">Esta opcion es solo para sierra escuadradora (cada corte va de lado a lado). Si vas a cortar en CNC, router o caladora, desactivala: el optimizador podra acomodar piezas en huecos en forma de L para aprovechar mejor el material.</p>
+    <div class="config-row">
+      <div class="config-field" style="flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="redondearTapacanto" checked>
+        <label for="redondearTapacanto" style="margin:0;" title="Al activarlo, el metraje de cada tipo de tapacanto se redondea hacia arriba al siguiente 0.5 m (ej. 7.1 m se cobra como 7.5 m, y 7.6 m se cobra como 8 m), para no comprar de menos.">Redondear metraje de tapacanto a 0.5 m</label>
+      </div>
+    </div>
+    </div>
+
+    <div class="btn-row panel-guardar-row" style="justify-content:flex-end;">
+      <button class="btn" id="guardarConfigBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="split">
+  <!-- IZQUIERDA: piezas + costos, centrado en la mitad izquierda de la pantalla -->
+  <div class="split-col">
+    <div class="split-inner">
+      <div class="panel" id="piezasPanel">
+        <h2>Piezas a cortar</h2>
+        <div class="table-scroll">
+          <table class="piezas" id="tablaPiezas">
+            <thead>
+              <tr>
+                <th class="col-num">#</th><th class="col-cant">Cant.</th><th class="col-largo" data-w="50">Largo<br>(mm)</th><th class="col-ancho" data-w="50">Ancho<br>(mm)</th>
+                <th class="col-girar" title="Haz clic en el checkbox para cambiar de estado: vacio = Auto (el optimizador elige la mejor posicion), raya = Normal (tal cual la capturaste), marcado = Girar 90 (la voltea al otro lado).">Girar<br><input type="checkbox" id="girarTodos" title="Marca para girar 90 grados todas las piezas; desmarca para volver todas a Auto"></th><th class="col-material" data-w="160">Material</th>
+                <th class="col-cantos" title="Clic en cada lado del cuadro para activar o desactivar el tapacanto en ese borde: arriba = L1, abajo = L2, izquierda = A1, derecha = A2.">Cantos</th>
+                <th class="col-lado" title="Tapacanto en el lado largo 1 (paralelo al lado de 2440 mm)">L1</th>
+                <th class="col-lado" title="Tapacanto en el lado largo 2 (paralelo al lado de 2440 mm)">L2</th>
+                <th class="col-lado" title="Tapacanto en el lado ancho 1 (paralelo al lado de 1220 mm)">A1</th>
+                <th class="col-lado" title="Tapacanto en el lado ancho 2 (paralelo al lado de 1220 mm)">A2</th>
+                <th class="col-tapatipo" data-w="160">Tipo de<br>tapacanto</th><th class="col-etiqueta">Etiqueta</th><th class="col-quitar"></th>
+              </tr>
+            </thead>
+            <tbody id="piezasBody"></tbody>
+          </table>
+        </div>
+        <div class="btn-row" style="justify-content:space-between; align-items:center;">
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn secondary sm" id="addPieza">+ Agregar pieza</button>
+            <button class="btn secondary sm" id="toggleAgregarComponente">+ Agregar componentes</button>
+            <div class="archivo-menu-wrap" id="archivoMenuWrap">
+              <button class="btn secondary sm" id="btnArchivo">Archivo</button>
+              <div class="archivo-menu" id="archivoMenu">
+                <button class="archivo-opcion" id="descargarFormato" title="Descarga en Excel las piezas, tapacantos y componentes del proyecto para volver a importarlos">Exportar formato</button>
+                <button class="archivo-opcion" id="toggleImportar" title="Selecciona un CSV de piezas o un XLSX de proyecto para agregar sus datos al formulario">Importar</button>
+              </div>
+            </div>
+          </div>
+          <button class="info-chip" id="toggleNotaGirar" style="margin-top:0;">Aviso: Girar y recálculo</button>
+        </div>
+        <div class="info-panel" id="notaGirarBody">
+          La columna <b>Girar</b> es un checkbox de 3 estados: haz clic sobre él para ir pasando de uno a otro. <b>Vacío = Auto</b> (por defecto): el optimizador acomoda la pieza en la mejor posición posible para aprovechar el tablero. <b>Raya = Normal</b>: mantiene la pieza tal cual la capturaste, sin girarla. <b>Marcado = Girar 90</b>: la voltea al otro lado respecto a como esté en ese momento, útil cuando la veta o el tapacanto solo permiten cortar en un sentido.<br>
+          El diagrama y el precio se recalculan automáticamente conforme vas capturando los datos, no hace falta ningún botón.<br>
+          Con <b>Corte de extremo a extremo</b> activado (en Preferencias, Ajustes de parámetros de corte), el acomodo está pensado para cortarse en una sierra escuadradora: primero un corte recto de lado a lado del tablero para separar cada franja horizontal, y luego cortes rectos verticales dentro de cada franja para separar las piezas; ningún corte queda a la mitad del tablero. Si lo desactivas, el optimizador aprovecha mejor el material acomodando piezas en huecos en forma de L, pero esos cortes ya no sirven para sierra escuadradora (se necesita caladora, router o CNC).
+        </div>
+        <div class="subpanel" id="agregarComponentePanel">
+          <p class="sub" style="margin:0 0 10px;">Elige un componente ya dado de alta en el menu "Material - Componentes" y la cantidad que usa este proyecto. Se suma al precio del proyecto despues del material.</p>
+          <div class="config-row" style="margin-bottom:10px;">
+            <div class="config-field" style="min-width:220px;">
+              <label>Componente</label>
+              <div class="combo"><input type="text" id="nuevoComponenteInput" autocomplete="off" placeholder="Buscar componente..."></div>
+            </div>
+            <div class="config-field">
+              <label>Cantidad</label>
+              <input type="number" id="nuevoComponenteCant" min="1" value="1" style="width:80px;">
+            </div>
+            <div class="config-field">
+              <button class="btn sm" id="agregarComponenteProyectoBtn">Agregar</button>
+            </div>
+          </div>
+          <div class="table-scroll" style="max-height:220px;">
+            <table class="mini-table" id="tablaComponentesProyecto">
+              <thead><tr><th>SKU</th><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="subpanel" id="importarPanel">
+          <p class="sub" style="margin:0 0 12px;">Selecciona un archivo CSV de piezas o un Excel descargado desde "Exportar formato". Las piezas válidas se agregan al proyecto; los componentes del XLSX se revisan primero en una vista previa para decidir cantidades, precios, SKU y creación de registros.</p>
+          <div class="config-row">
+            <div class="config-field">
+              <label>Archivo (CSV o Excel)</label>
+              <input type="file" id="archivoImportar" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="width:auto;">
+            </div>
+          </div>
+          <p id="importarEstado" class="sub" style="margin:6px 0 0;"></p>
+          <div class="btn-row" style="justify-content:flex-end; margin-top:14px;">
+            <button class="btn" id="importarArchivoBtn">Importar archivo</button>
+          </div>
+          <div class="import-preview" id="importacionVistaPrevia">
+            <h3 class="config-sub" style="margin-top:0;">Vista previa de importación</h3>
+            <p class="sub" id="importacionVistaPreviaResumen" style="margin:0 0 10px;"></p>
+            <h4 style="margin:10px 0 6px;">Componentes</h4>
+            <div class="import-preview-opciones">
+              <div>
+                <label for="importarPoliticaCantidad">Cantidades del proyecto</label>
+                <select id="importarPoliticaCantidad">
+                  <option value="reemplazar">Reemplazar con las cantidades del archivo</option>
+                  <option value="sumar">Sumar a las cantidades actuales</option>
+                </select>
+              </div>
+              <div>
+                <label for="importarPoliticaPrecio">Precios del catálogo</label>
+                <select id="importarPoliticaPrecio">
+                  <option value="actualizar">Actualizar con los precios del archivo</option>
+                  <option value="conservar">Conservar los precios actuales</option>
+                </select>
+              </div>
+              <div class="import-preview-check">
+                <input type="checkbox" id="importarCrearNuevos" checked>
+                <label for="importarCrearNuevos">Crear componentes y materiales que no existan en el catálogo</label>
+              </div>
+            </div>
+            <div class="import-preview-tabla-wrap">
+              <table class="mini-table" id="tablaVistaPreviaComponentes">
+                <thead>
+                  <tr>
+                    <th>Fila(s)</th><th>ID interno</th><th>SKU importado</th><th>SKU que se usará</th>
+                    <th>Nombre importado</th><th>Componente encontrado</th>
+                    <th>Cant. actual</th><th>Cant. importada</th><th>Cant. resultante</th>
+                    <th>Precio actual</th><th>Precio importado</th><th>Precio resultante</th>
+                    <th>Acción propuesta</th><th>Estado / advertencia</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <h4 style="margin:14px 0 6px;">Materiales</h4>
+            <p class="sub" id="importacionMaterialesResumen" style="margin:0 0 8px;"></p>
+            <div class="import-preview-tabla-wrap" id="importacionMaterialesTablaWrap">
+              <table class="mini-table" id="tablaVistaPreviaMateriales">
+                <thead>
+                  <tr>
+                    <th>Fila</th><th>ID importado</th><th>SKU importado</th><th>Nombre</th>
+                    <th>Largo</th><th>Ancho</th><th>Espesor</th>
+                    <th>Precio actual</th><th>Precio importado</th>
+                    <th>Coincidencia encontrada</th><th>Acción propuesta</th>
+                    <th>Estado</th><th>Mensaje / advertencia</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="btn-row" style="justify-content:flex-end; margin-top:14px;">
+              <button class="btn secondary sm" id="cancelarImportacionVistaPrevia">Cancelar</button>
+              <button class="btn sm" id="confirmarImportacionVistaPrevia">Confirmar importación</button>
+            </div>
+          </div>
+        </div>
+        <div class="cantidad-proyectos-box">
+          <label for="cantidadProyectos">Cantidad de proyectos</label>
+          <input type="number" id="cantidadProyectos" value="1" min="1" step="1">
+          <span class="sub">Multiplica la cantidad de cada linea de corte y de cada componente (no cambia lo que esta escrito en la tabla, solo el calculo).</span>
+        </div>
+        <div id="avisos"></div>
+      </div>
+
+      <div class="panel" id="reportePanel" style="display:none;">
+        <h2>Precio del proyecto</h2>
+        <div id="reporteContenido"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- barra para arrastrar y cambiar el ancho relativo entre la columna de piezas/precio y la
+       columna del diagrama (oculta en pantallas chicas, donde las columnas ya se apilan). -->
+  <div class="split-resizer" id="splitResizer" title="Arrastra para cambiar el ancho de las columnas"></div>
+
+  <!-- DERECHA: diagrama, centrado en la mitad derecha de la pantalla -->
+  <div class="split-col derecha">
+    <div class="split-inner">
+    <div class="panel" id="resultadoPanel" style="display:none;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;">
+        <h2 style="margin:0;">Diagrama de corte</h2>
+        <button class="info-chip" id="toggleNotaLados" style="margin-top:0;">Aviso de largo de la veta</button>
+      </div>
+      <div class="tabs" id="boardTabs" style="margin-bottom:12px;"></div>
+      <div class="info-panel" id="notaLadosBody" style="margin-top:-6px; margin-bottom:12px;">
+        L1/L2 son siempre los lados del lado MAS LARGO de la pieza. A1/A2 son siempre los lados del lado MAS CORTO de la pieza. Los lados marcados con tapacanto se dibujan en <span style="color:#dc2626;font-weight:700;">rojo</span> sobre la pieza.
+      </div>
+      <div class="board-svg-outer">
+        <div class="board-svg-wrap" id="boardSvgWrap"></div>
+      </div>
+      <div class="espejo-menu-wrap" id="espejoMenuWrap">
+        <button class="icon-btn board-svg-espejo" id="btnEspejo" title="Espejo: acomoda las piezas del tablero pegadas a un lado (util para revisar la veta o juntar el sobrante en un solo lugar)" aria-label="Espejo">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v18"/>
+            <path d="M8 6l4 -3l4 3"/>
+            <path d="M8 18l4 3l4 -3"/>
+          </svg>
+          <span>Espejo</span>
+        </button>
+        <div class="espejo-menu" id="espejoMenu">
+          <button class="espejo-opcion" data-dir="arriba">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg>
+            Pegar arriba
+          </button>
+          <button class="espejo-opcion" data-dir="abajo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>
+            Pegar abajo
+          </button>
+          <button class="espejo-opcion" data-dir="izquierda">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>
+            Pegar a la izquierda
+          </button>
+          <button class="espejo-opcion" data-dir="derecha">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+            Pegar a la derecha
+          </button>
+        </div>
+      </div>
+      <div class="sobrantes" id="sobrantesBox"></div>
+      <div class="footer-actions">
+        <button class="btn wide secondary" id="exportar">Exportar</button>
+        <button class="btn wide secondary" id="exportarDxf">Exportar DXF (CNC)</button>
+        <button class="btn wide" id="confirmar">Confirmar pedido</button>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+<script src="./src/scripts/main.js"></script>
+</body>
+</html>
