@@ -12,6 +12,8 @@
     validarNumeroEntrada
   } = window.ProyCutValidation;
 
+  const LIMITES = window.ProyCutLimits;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -25,17 +27,6 @@
     activeTab: 0,
     ultimoTotal: 0,
     ultimoReporte: null // copia de los datos del reporte de precio, para que "Exportar" use los mismos numeros
-  };
-
-  const LIMITES = {
-    csvBytes: 2 * 1024 * 1024,
-    csvFilas: 2000,
-    csvColumnas: 11,
-    cantidadPorFila: 1000,
-    cantidadProyectos: 1000,
-    piezasExpandidas: 50000,
-    medidaMm: 100000,
-    precio: 100000000
   };
 
   // ---------- Etapa 2D-A: identidad interna y SKU automatico de catalogos ----------
