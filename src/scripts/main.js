@@ -17,6 +17,14 @@
 
   const LIMITES = window.ProyCutLimits;
 
+  const {
+    normalizarSkuManual,
+    normalizarNombreComponente,
+    normalizarNombreMaterialImportado,
+    normalizarGirarCSV,
+    esValorAfirmativo
+  } = window.ProyCutTextNormalization;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -95,10 +103,6 @@
       });
     });
     return origen;
-  }
-
-  function normalizarSkuManual(valor){
-    return String(valor == null ? '' : valor).trim().toUpperCase();
   }
 
   function actualizarMetadatosSku(registro, origen){
@@ -1511,24 +1515,6 @@
     const filas = datos.map(item => ({cols:separarLineaCSV(item.texto), numeroFila:item.numero}));
     return {filas, errores};
   }
-  function esValorAfirmativo(valor){
-    if(!valor) return false;
-    const v = valor.trim().toUpperCase();
-    if(v === 'SI') return true;
-    if(v === 'SÍ') return true;
-    if(v === '1') return true;
-    if(v === 'TRUE') return true;
-    if(v === 'X') return true;
-    return false;
-  }
-  function normalizarGirarCSV(valor){
-    const v = (valor || '').trim().toLowerCase();
-    if(v === 'normal') return 'normal';
-    if(v === 'rotado') return 'rotado';
-    if(v === 'girar') return 'rotado';
-    if(v === '90') return 'rotado';
-    return 'auto';
-  }
 
   // agrega una pieza al formulario a partir de un arreglo de columnas, en el mismo orden que
   // el Excel/CSV de "Exportar formato" (Cantidad, Largo_mm, Ancho_mm, Girar, Material, L1, L2,
@@ -1905,24 +1891,6 @@
 
   // ---------- Etapa 2D-B: vista previa y aplicación controlada de componentes ----------
   let importacionPendiente2DB = null;
-
-  function normalizarNombreComponente(valor){
-    return String(valor == null ? '' : valor)
-      .trim()
-      .toLocaleLowerCase('es')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, ' ');
-  }
-
-  function normalizarNombreMaterialImportado(valor){
-    return String(valor == null ? '' : valor)
-      .trim()
-      .toLocaleLowerCase('es')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, ' ');
-  }
 
   function prepararVistaPreviaMateriales(registros, catalogoMateriales){
     const catalogo = catalogoMateriales || state.materiales;
