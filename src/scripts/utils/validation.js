@@ -1,4 +1,6 @@
 (function(){
+  const LIMITES = window.ProyCutLimits;
+
   function validarNumeroEntrada(valor, nombre, opciones){
     const opts = opciones || {};
     const texto = String(valor === null || valor === undefined ? '' : valor).trim();
@@ -11,7 +13,22 @@
     return {ok:true, valor:numero};
   }
 
+  function validarCantidad(valor, nombre){
+    return validarNumeroEntrada(valor, nombre, {entero:true, min:1, max:LIMITES.cantidadPorFila});
+  }
+
+  function validarMedida(valor, nombre){
+    return validarNumeroEntrada(valor, nombre, {min:Number.MIN_VALUE, max:LIMITES.medidaMm});
+  }
+
+  function validarPrecio(valor, nombre){
+    return validarNumeroEntrada(valor, nombre, {min:0, max:LIMITES.precio});
+  }
+
   window.ProyCutValidation = {
-    validarNumeroEntrada
+    validarNumeroEntrada,
+    validarCantidad,
+    validarMedida,
+    validarPrecio
   };
 })();

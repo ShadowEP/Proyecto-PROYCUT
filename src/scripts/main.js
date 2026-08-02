@@ -9,7 +9,10 @@
   } = window.ProyCutFormat;
 
   const {
-    validarNumeroEntrada
+    validarNumeroEntrada,
+    validarCantidad,
+    validarMedida,
+    validarPrecio
   } = window.ProyCutValidation;
 
   const LIMITES = window.ProyCutLimits;
@@ -786,18 +789,6 @@
           : inicial.bordeExterior
       )
     }), inicial);
-  }
-
-  function validarCantidad(valor, nombre){
-    return validarNumeroEntrada(valor, nombre, {entero:true, min:1, max:LIMITES.cantidadPorFila});
-  }
-
-  function validarMedida(valor, nombre){
-    return validarNumeroEntrada(valor, nombre, {min:Number.MIN_VALUE, max:LIMITES.medidaMm});
-  }
-
-  function validarPrecio(valor, nombre){
-    return validarNumeroEntrada(valor, nombre, {min:0, max:LIMITES.precio});
   }
 
   function textoSeguroParaExcel(valor){
