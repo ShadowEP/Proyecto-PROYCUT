@@ -69,6 +69,12 @@
     nombreArchivoSeguro
   } = window.ProyCutDxfExport;
 
+  const {
+    fechaLegibleHoy,
+    extraerDimensionesSvg,
+    copiarDatosParaExcel
+  } = window.ProyCutExcelUtils;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -5367,22 +5373,6 @@
     }
   }
 
-  function fechaLegibleHoy(){
-    return new Date().toLocaleDateString('es-MX', {day:'numeric', month:'long', year:'numeric'});
-  }
-
-  // saca el ancho y alto reales del svg del diagrama (incluye los margenes de las cotas de
-  // sobrantes, que varian segun cuantos sobrantes se acotan), para poder rasterizarlo sin
-  // deformarlo y para calcular la altura final que va a ocupar en el Excel.
-  function extraerDimensionesSvg(svgTexto){
-    const mW = svgTexto.match(/<svg[^>]*width="([0-9.]+)"/);
-    const mH = svgTexto.match(/<svg[^>]*height="([0-9.]+)"/);
-    return {
-      w: mW ? parseFloat(mW[1]) : 800,
-      h: mH ? parseFloat(mH[1]) : 400
-    };
-  }
-
   // dibuja el svg del diagrama sobre un canvas y devuelve el PNG resultante como ArrayBuffer,
   // listo para incrustarse en el Excel.
   function svgAPngBuffer(svgTexto, anchoPx, altoPx){
@@ -6000,10 +5990,6 @@
     aplicarFilaTotal(wsResumen, r3, 2);
 
     return wb;
-  }
-
-  function copiarDatosParaExcel(valor){
-    return JSON.parse(JSON.stringify(valor));
   }
 
   async function exportarExcel(){
