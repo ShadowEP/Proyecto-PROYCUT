@@ -25,6 +25,10 @@
     esValorAfirmativo
   } = window.ProyCutTextNormalization;
 
+  const {
+    separarLineaCSV
+  } = window.ProyCutCSV;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -1485,11 +1489,6 @@
     }
   });
 
-  // separa una linea de CSV en columnas (no soporta comillas con comas adentro, suficiente
-  // para el formato numerico/texto simple que se exporta desde el boton "Exportar formato").
-  function separarLineaCSV(linea){
-    return linea.split(',').map(c => c.trim());
-  }
   function parsearCSV(texto){
     const lineas = texto.split(/\r\n|\n|\r/);
     const noVacias = [];
