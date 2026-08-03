@@ -102,11 +102,22 @@
     return out;
   }
 
+  function calcularRectsLibresDesdeObstaculos(area, obstaculos){
+    let libres = [{x:area.x, y:area.y, w:area.w, h:area.h}];
+    (obstaculos || []).forEach(obstaculo => {
+      const siguientes = [];
+      libres.forEach(rect => siguientes.push(...restarObstaculoRectangular(rect, obstaculo)));
+      libres = siguientes;
+    });
+    return fusionarRectsAdyacentes(podarRectsContenidos(libres));
+  }
+
   window.ProyCutFreeRectangles = {
     fusionarRectsAdyacentes,
     interseccionRectangulos,
     restarObstaculoRectangular,
     rectContenidoEn,
-    podarRectsContenidos
+    podarRectsContenidos,
+    calcularRectsLibresDesdeObstaculos
   };
 })();

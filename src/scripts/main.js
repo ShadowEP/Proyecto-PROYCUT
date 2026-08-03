@@ -46,7 +46,8 @@
     restarObstaculoRectangular,
     fusionarRectsAdyacentes,
     rectContenidoEn,
-    podarRectsContenidos
+    podarRectsContenidos,
+    calcularRectsLibresDesdeObstaculos
   } = window.ProyCutFreeRectangles;
 
   let BOARD_W = 2440; // largo -> eje X
@@ -4459,16 +4460,6 @@
 
   function contarCortes(board){
     return {cortes: board.cortes, largoMm: board.corteMm};
-  }
-
-  function calcularRectsLibresDesdeObstaculos(area, obstaculos){
-    let libres = [{x:area.x, y:area.y, w:area.w, h:area.h}];
-    (obstaculos || []).forEach(obstaculo => {
-      const siguientes = [];
-      libres.forEach(rect => siguientes.push(...restarObstaculoRectangular(rect, obstaculo)));
-      libres = siguientes;
-    });
-    return fusionarRectsAdyacentes(podarRectsContenidos(libres));
   }
 
   // Huecos provisionales para mover o girar una pieza. Solo reservan between_pieces; nunca
