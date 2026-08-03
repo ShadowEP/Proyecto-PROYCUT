@@ -29,6 +29,10 @@
     separarLineaCSV
   } = window.ProyCutCSV;
 
+  const {
+    ENCABEZADO_FORMATO
+  } = window.ProyCutProjectFormat;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -1339,7 +1343,6 @@
   });
 
   // ---------- Formato de proyecto (piezas + componentes) e Importar ----------
-  const ENCABEZADO_FORMATO = ['Cantidad','Largo_mm','Ancho_mm','Girar','Material','L1','L2','A1','A2','Tipo_tapacanto','Etiqueta'];
   const ENCABEZADO_COMPONENTES_FORMATO = ['SKU_o_codigo','Nombre_componente','Cantidad_por_proyecto','Precio_unitario_referencia'];
   const ENCABEZADO_MATERIALES_FORMATO = ['ID_interno','SKU_o_codigo','Nombre_material','Largo_mm','Ancho_mm','Espesor_mm','Precio_por_tablero'];
   const IDENTIFICADOR_FORMATO_PROYECTO = 'PROYCUT_PROJECT_FORMAT';
