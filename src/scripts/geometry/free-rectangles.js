@@ -74,9 +74,39 @@
     return out;
   }
 
+  // true si el rectangulo "a" cabe completamente adentro de "b" (con un pequeno margen de
+  // tolerancia para redondeos). Se usa para descartar sobrantes que ya estan cubiertos por otro
+  // sobrante mas grande, y asi no listar el mismo hueco dos veces.
+  function rectContenidoEn(a, b){
+    if(a.x < b.x-0.001) return false;
+    if(a.y < b.y-0.001) return false;
+    if(a.x+a.w > b.x+b.w+0.001) return false;
+    if(a.y+a.h > b.y+b.h+0.001) return false;
+    return true;
+  }
+  function podarRectsContenidos(rects){
+    const out = [];
+    for(let i=0;i<rects.length;i++){
+      let dominado = false;
+      for(let j=0;j<rects.length;j++){
+        if(i===j) continue;
+        if(!rectContenidoEn(rects[i], rects[j])) continue;
+        if(rectContenidoEn(rects[j], rects[i])){
+          if(j<i){ dominado = true; break; }
+          continue;
+        }
+        dominado = true; break;
+      }
+      if(!dominado) out.push(rects[i]);
+    }
+    return out;
+  }
+
   window.ProyCutFreeRectangles = {
     fusionarRectsAdyacentes,
     interseccionRectangulos,
-    restarObstaculoRectangular
+    restarObstaculoRectangular,
+    rectContenidoEn,
+    podarRectsContenidos
   };
 })();
