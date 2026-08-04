@@ -112,6 +112,10 @@
     prepararProyectoParaOptimizacion
   } = window.ProyCutProjectPreparation;
 
+  const {
+    optimizarProyectoPreparado
+  } = window.ProyCutProjectOptimization;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -4667,61 +4671,28 @@
       nivelOptimizacion
     } = preparacion.opcionesProyecto;
 
-    let totalCortes = 0, totalCorteMm = 0;
-    const boardsAll = [];
-    const tablerosPorMaterial = {};
-    Object.keys(porMaterial).forEach(mat => {
-      // cada material puede tener su propia medida de tablero (columnas "Largo (mm)"/"Ancho (mm)"
-      // de "Placas y tableros"); se fija aqui como medida "activa" antes de empacar ESTE material,
-      // y cada tablero que se cree se queda con su propia medida guardada (board.boardW/boardH)
-      // para no depender de esta variable global despues (por ejemplo cuando ya se este empacando
-      // el siguiente material con otra medida distinta).
-      const medidaMat = medidaTableroDeMaterial(mat);
-      BOARD_W = medidaMat.largo;
-      BOARD_H = medidaMat.ancho;
-      const areaUtil = calcularRectanguloUtilTablero(
-        medidaMat.largo,
-        medidaMat.ancho,
-        parametrosCorte.margenes
-      );
-      if(!areaUtil.ok) return;
-      const kerfMaterial = obtenerKerfMaterial(porMaterial[mat], parametrosCorte);
-      const areaColocacion = calcularRectanguloColocacion(
-        areaUtil.rect,
-        kerfMaterial.bordeExterior
-      );
-      if(!areaColocacion.ok) return;
-      const datosTablero = {
-        boardW:medidaMat.largo,
-        boardH:medidaMat.ancho,
-        areaUtil:areaUtil.rect,
-        areaColocacion:areaColocacion.rect,
-        margenes:areaUtil.margenes,
-        kerfValor:kerfMaterial.valor,
-        kerfEntrePiezas:kerfMaterial.entrePiezas,
-        kerfPiezaSobrante:kerfMaterial.piezaSobrante,
-        kerfBordeExterior:kerfMaterial.bordeExterior
-      };
-      const boards = empacarMaterial(
-        porMaterial[mat],
-        kerfMaterial.entrePiezas,
-        libre,
-        nivelOptimizacion,
-        datosTablero
-      );
-      // recorre (baja) las piezas de cada tablero recien optimizado para juntar los huecos sueltos
-      // en uno solo mas grande y aprovechable, en vez de dejar varios sobrantes chicos repartidos.
-      boards.forEach(b => compactarHaciaAbajo(b));
-      tablerosPorMaterial[mat] = boards.length;
-      boards.forEach((b, idx) => {
-        b.materialLabel = mat;
-        b.indexEnMaterial = idx+1;
-        boardsAll.push(b);
-        const {cortes, largoMm} = contarCortes(b);
-        totalCortes += cortes;
-        totalCorteMm += largoMm;
-      });
+    const optimizacion = optimizarProyectoPreparado({
+      gruposPorMaterial: porMaterial,
+      parametrosCorteProyecto: parametrosCorte,
+      opcionesProyecto: {libre, nivelOptimizacion},
+      dependencias: {
+        medidaTableroDeMaterial,
+        establecerMedidaTableroActiva: medida => {
+          BOARD_W = medida.largo;
+          BOARD_H = medida.ancho;
+        },
+        calcularRectanguloUtilTablero,
+        obtenerKerfMaterial,
+        calcularRectanguloColocacion,
+        empacarMaterial,
+        compactarHaciaAbajo,
+        contarCortes
+      }
     });
+    const boardsAll = optimizacion.boards;
+    const tablerosPorMaterial = optimizacion.tablerosPorMaterial;
+    const totalCortes = optimizacion.totalCortes;
+    const totalCorteMm = optimizacion.totalCorteMm;
     // se trata de mantener la misma hoja/tablero que el usuario ya tenia abierto, en vez de
     // regresar siempre a la primera cada vez que se cambia una medida o un enchape.
     const tabAnterior = state.boards[state.activeTab];
