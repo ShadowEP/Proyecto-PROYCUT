@@ -116,6 +116,11 @@
     optimizarProyectoPreparado
   } = window.ProyCutProjectOptimization;
 
+  const {
+    aplicarResultadoOptimizacion,
+    aplicarResultadoCostos
+  } = window.ProyCutProjectResults;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -4693,19 +4698,12 @@
     const tablerosPorMaterial = optimizacion.tablerosPorMaterial;
     const totalCortes = optimizacion.totalCortes;
     const totalCorteMm = optimizacion.totalCorteMm;
-    // se trata de mantener la misma hoja/tablero que el usuario ya tenia abierto, en vez de
-    // regresar siempre a la primera cada vez que se cambia una medida o un enchape.
-    const tabAnterior = state.boards[state.activeTab];
-    const idAnterior = tabAnterior ? (tabAnterior.materialLabel + '·' + tabAnterior.indexEnMaterial) : null;
-    state.boards = boardsAll;
-    let nuevoIndice = -1;
-    if(idAnterior !== null){
-      nuevoIndice = boardsAll.findIndex(b => (b.materialLabel + '·' + b.indexEnMaterial) === idAnterior);
-    }
-    if(nuevoIndice < 0) nuevoIndice = Math.min(state.activeTab, boardsAll.length-1);
-    state.activeTab = Math.max(0, nuevoIndice);
-    document.getElementById('resultadoPanel').style.display = 'block';
-    renderDiagrama();
+    aplicarResultadoOptimizacion({
+      state,
+      boards: boardsAll,
+      resultadoPanel: document.getElementById('resultadoPanel'),
+      renderDiagrama
+    });
 
     const resultadoCostos = calcularCostosProyecto({
       piezas,
@@ -4723,25 +4721,19 @@
       precioCorteMetro,
       redondearTapacanto: document.getElementById('redondearTapacanto').checked
     });
-    if(!resultadoCostos.ok){
-      mostrarErroresProyecto(resultadoCostos.errores);
-      document.getElementById('resultadoPanel').style.display = 'none';
-      document.getElementById('reportePanel').style.display = 'none';
-      state.boards = [];
-      state.ultimoReporte = null;
-      state.ultimoTotal = 0;
-      return false;
-    }
-    const datosReporte = resultadoCostos.datosReporte;
-    const plantilla = document.getElementById('plantillaReporte').value || 'columnas';
-    const disenoTotal = document.getElementById('disenoTotal').value || 'pastel';
-    document.getElementById('reporteContenido').innerHTML = renderReporte(datosReporte, plantilla, disenoTotal);
-    document.getElementById('reportePanel').style.display = 'block';
-    state.ultimoTotal = datosReporte.total;
-    // se guarda una copia completa de los datos del reporte para que el boton "Exportar" arme el
-    // Excel con exactamente los mismos numeros que se estan mostrando en pantalla.
-    state.ultimoReporte = datosReporte;
-    return true;
+    return aplicarResultadoCostos({
+      state,
+      resultadoCostos,
+      resultadoPanel: document.getElementById('resultadoPanel'),
+      reportePanel: document.getElementById('reportePanel'),
+      reporteContenido: document.getElementById('reporteContenido'),
+      leerOpcionesReporte: () => ({
+        plantilla: document.getElementById('plantillaReporte').value || 'columnas',
+        disenoTotal: document.getElementById('disenoTotal').value || 'pastel'
+      }),
+      mostrarErroresProyecto,
+      renderReporte
+    });
   }
 
   // recalculo automatico: cualquier cambio en la tabla de piezas actualiza el diagrama y el costo
