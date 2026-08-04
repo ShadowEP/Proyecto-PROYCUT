@@ -100,6 +100,10 @@
     calcularCostosProyecto
   } = window.ProyCutCosting;
 
+  const {
+    leerFilasPiezasDesdeDOM
+  } = window.ProyCutPiecesDomReader;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -909,19 +913,19 @@
   // cambiar las medidas (u otro dato puntual) y volver a importarlo.
   function leerPiezasFormularioParaFormato(){
     const filas = [];
-    document.querySelectorAll('#piezasBody tr').forEach(row => {
-      const cant = parseInt(row.querySelector('.p-cant').value, 10) || 1;
-      const l = parseFloat(row.querySelector('.p-l').value);
-      const a = parseFloat(row.querySelector('.p-a').value);
+    leerFilasPiezasDesdeDOM().forEach(fila => {
+      const cant = parseInt(fila.cantTexto, 10) || 1;
+      const l = parseFloat(fila.largoTexto);
+      const a = parseFloat(fila.anchoTexto);
       if(!l || !a) return;
-      const girarModo = row.querySelector('.p-girar').dataset.modo || 'auto';
-      const material = row.querySelector('.p-material-input').dataset.valor || '';
-      const tapaTipo = row.querySelector('.p-tapatipo-input').dataset.valor || '';
-      const l1 = row.querySelector('.p-l1').checked;
-      const l2 = row.querySelector('.p-l2').checked;
-      const a1 = row.querySelector('.p-a1').checked;
-      const a2 = row.querySelector('.p-a2').checked;
-      const label = row.querySelector('.p-label').value.trim();
+      const girarModo = fila.girarModo || 'auto';
+      const material = fila.material || '';
+      const tapaTipo = fila.tapaTipo || '';
+      const l1 = fila.l1;
+      const l2 = fila.l2;
+      const a1 = fila.a1;
+      const a2 = fila.a2;
+      const label = fila.labelTexto.trim();
       filas.push([
         cant, l, a, girarModo, material,
         l1 ? 'SI' : 'NO', l2 ? 'SI' : 'NO', a1 ? 'SI' : 'NO', a2 ? 'SI' : 'NO', tapaTipo, label
@@ -2262,8 +2266,8 @@
     let rechazadas = 0;
     let ultimaFila = null;
     const errores = [];
-    let cantidadAcumulada = Array.from(document.querySelectorAll('#piezasBody .p-cant')).reduce((total, inputCantidad) => {
-      const resultado = validarCantidad(inputCantidad.value, 'Cantidad existente');
+    let cantidadAcumulada = leerFilasPiezasDesdeDOM().reduce((total, fila) => {
+      const resultado = validarCantidad(fila.cantTexto, 'Cantidad existente');
       return total + (resultado.ok ? resultado.valor : 0);
     }, 0);
     const proyectosActuales = validarNumeroEntrada(
@@ -3356,18 +3360,18 @@
       if(!cantidad.ok) errores.push(cantidad.error);
     });
 
-    const filasPiezas = Array.from(document.querySelectorAll('#piezasBody tr'));
+    const filasPiezas = leerFilasPiezasDesdeDOM();
     if(filasPiezas.length === 0) errores.push('Agrega al menos una pieza antes de continuar.');
     let totalPorProyecto = 0;
-    filasPiezas.forEach((tr, i) => {
+    filasPiezas.forEach((fila, i) => {
       const n = i + 1;
-      const cantidad = validarCantidad(tr.querySelector('.p-cant').value, 'Pieza ' + n + ', cantidad');
-      const largo = validarMedida(tr.querySelector('.p-l').value, 'Pieza ' + n + ', largo');
-      const ancho = validarMedida(tr.querySelector('.p-a').value, 'Pieza ' + n + ', ancho');
+      const cantidad = validarCantidad(fila.cantTexto, 'Pieza ' + n + ', cantidad');
+      const largo = validarMedida(fila.largoTexto, 'Pieza ' + n + ', largo');
+      const ancho = validarMedida(fila.anchoTexto, 'Pieza ' + n + ', ancho');
       if(!cantidad.ok) errores.push(cantidad.error); else totalPorProyecto += cantidad.valor;
       if(!largo.ok) errores.push(largo.error);
       if(!ancho.ok) errores.push(ancho.error);
-      if((tr.querySelector('.p-material-input').dataset.valor || '').trim() === ''){
+      if((fila.material || '').trim() === ''){
         errores.push('Pieza ' + n + ': selecciona un material.');
       }
     });
@@ -3389,7 +3393,7 @@
   }
 
   function leerPiezas(parametrosCorteProyecto){
-    const rows = document.querySelectorAll('#piezasBody tr');
+    const filas = leerFilasPiezasDesdeDOM();
     const piezas = [];
     const errores = [];
     const parametrosProyecto = parametrosCorteProyecto || resolverParametrosCorteEtapa4();
@@ -3399,23 +3403,23 @@
     // en "Normal" (tal cual quedaron capturadas en la tabla). Solo con "Completa" el optimizador
     // tiene libertad de girarlas 90° para aprovechar mejor el material.
     const permitirGirarAuto = obtenerNivelOptimizacion() !== 'normal';
-    rows.forEach(row => {
-      const label = row.querySelector('.p-label').value.trim() || ('Pieza ' + row.dataset.id);
-      const cant = (parseInt(row.querySelector('.p-cant').value, 10) || 0) * cantidadProyectos;
-      const l = parseFloat(row.querySelector('.p-l').value);
-      const a = parseFloat(row.querySelector('.p-a').value);
-      let girarModo = row.querySelector('.p-girar').dataset.modo || 'auto'; // 'auto' | 'normal' | 'rotado'
+    filas.forEach(fila => {
+      const label = fila.labelTexto.trim() || ('Pieza ' + fila.id);
+      const cant = (parseInt(fila.cantTexto, 10) || 0) * cantidadProyectos;
+      const l = parseFloat(fila.largoTexto);
+      const a = parseFloat(fila.anchoTexto);
+      let girarModo = fila.girarModo || 'auto'; // 'auto' | 'normal' | 'rotado'
       if(girarModo === 'auto'){
         if(!permitirGirarAuto) girarModo = 'normal';
       }
-      const material = row.querySelector('.p-material-input').dataset.valor;
-      const tapaTipo = row.querySelector('.p-tapatipo-input').dataset.valor;
-      const l1 = row.querySelector('.p-l1').checked;
-      const l2 = row.querySelector('.p-l2').checked;
-      const a1 = row.querySelector('.p-a1').checked;
-      const a2 = row.querySelector('.p-a2').checked;
+      const material = fila.material;
+      const tapaTipo = fila.tapaTipo;
+      const l1 = fila.l1;
+      const l2 = fila.l2;
+      const a1 = fila.a1;
+      const a2 = fila.a2;
       if(!l || !a || cant<=0) return;
-      const parametrosPieza = resolverParametrosCorteEtapa4(row.dataset.id);
+      const parametrosPieza = resolverParametrosCorteEtapa4(fila.id);
       if(!parametrosPieza.ok){
         errores.push(...parametrosPieza.errores.map(error => '"' + label + '": ' + error));
         return;
@@ -3457,7 +3461,7 @@
       }
       for(let i=0;i<cant;i++){
         piezas.push({
-          num: row.dataset.id, label, l, a, girarModo,
+          num: fila.id, label, l, a, girarModo,
           material, tapaTipo, l1, l2, a1, a2,
           kerfEfectivo:parametrosPieza.kerf,
           kerfEntrePiezasEfectivo:parametrosPieza.kerfEntrePiezas,
@@ -4953,21 +4957,21 @@
   // lee la tabla de piezas tal cual esta capturada (una fila por renglon, sin repetir por
   // cantidad), para la hoja "Piezas y diagramas" del Excel.
   function leerPiezasParaExportar(){
-    const rows = document.querySelectorAll('#piezasBody tr');
+    const filas = leerFilasPiezasDesdeDOM();
     const piezas = [];
-    rows.forEach(row => {
-      const label = row.querySelector('.p-label').value.trim();
-      const cant = parseInt(row.querySelector('.p-cant').value, 10) || 0;
-      const l = parseFloat(row.querySelector('.p-l').value);
-      const a = parseFloat(row.querySelector('.p-a').value);
-      const material = row.querySelector('.p-material-input').dataset.valor || '';
-      const tapaTipo = row.querySelector('.p-tapatipo-input').dataset.valor || '';
-      const l1 = row.querySelector('.p-l1').checked;
-      const l2 = row.querySelector('.p-l2').checked;
-      const a1 = row.querySelector('.p-a1').checked;
-      const a2 = row.querySelector('.p-a2').checked;
+    filas.forEach(fila => {
+      const label = fila.labelTexto.trim();
+      const cant = parseInt(fila.cantTexto, 10) || 0;
+      const l = parseFloat(fila.largoTexto);
+      const a = parseFloat(fila.anchoTexto);
+      const material = fila.material || '';
+      const tapaTipo = fila.tapaTipo || '';
+      const l1 = fila.l1;
+      const l2 = fila.l2;
+      const a1 = fila.a1;
+      const a2 = fila.a2;
       if(!l || !a || cant<=0) return;
-      piezas.push({num: row.dataset.id, label: label, cant: cant, l: l, a: a, material: material, tapaTipo: tapaTipo, l1: l1, l2: l2, a1: a1, a2: a2});
+      piezas.push({num: fila.id, label: label, cant: cant, l: l, a: a, material: material, tapaTipo: tapaTipo, l1: l1, l2: l2, a1: a1, a2: a2});
     });
     return piezas;
   }
