@@ -104,6 +104,10 @@
     leerFilasPiezasDesdeDOM
   } = window.ProyCutPiecesDomReader;
 
+  const {
+    construirModeloProyecto
+  } = window.ProyCutProjectModel;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -3290,7 +3294,10 @@
     return radio ? radio.value : 'normal';
   }
 
-  function validarProyecto(){
+  // modeloProyecto es opcional: si recalcular() ya construyo el modelo del ciclo actual (con las
+  // filas de #piezasBody leidas una sola vez), se reutiliza aqui en vez de volver a leer el DOM;
+  // si se llama sin argumento (por ejemplo, en una prueba aislada), se comporta igual que antes.
+  function validarProyecto(modeloProyecto){
     const errores = [];
     const parametrosCorte = resolverParametrosCorteEtapa4();
     if(!parametrosCorte.ok) errores.push(...parametrosCorte.errores);
@@ -3360,7 +3367,7 @@
       if(!cantidad.ok) errores.push(cantidad.error);
     });
 
-    const filasPiezas = leerFilasPiezasDesdeDOM();
+    const filasPiezas = (modeloProyecto && modeloProyecto.filas) || leerFilasPiezasDesdeDOM();
     if(filasPiezas.length === 0) errores.push('Agrega al menos una pieza antes de continuar.');
     let totalPorProyecto = 0;
     filasPiezas.forEach((fila, i) => {
@@ -3392,13 +3399,18 @@
     });
   }
 
-  function leerPiezas(parametrosCorteProyecto){
-    const filas = leerFilasPiezasDesdeDOM();
+  // modeloProyecto es opcional, con el mismo criterio que en validarProyecto(): si recalcular() ya
+  // leyo las filas y la cantidad de proyectos para este ciclo, se reutilizan aqui; si no se recibe
+  // modelo (llamada aislada), leerPiezas() vuelve a leer el DOM por su cuenta como hacia antes.
+  function leerPiezas(parametrosCorteProyecto, modeloProyecto){
+    const filas = (modeloProyecto && modeloProyecto.filas) || leerFilasPiezasDesdeDOM();
     const piezas = [];
     const errores = [];
     const parametrosProyecto = parametrosCorteProyecto || resolverParametrosCorteEtapa4();
     if(!parametrosProyecto.ok) return {piezas, errores:parametrosProyecto.errores.slice()};
-    const cantidadProyectos = obtenerCantidadProyectos();
+    const cantidadProyectos = (modeloProyecto && modeloProyecto.cantidadProyectos !== undefined)
+      ? modeloProyecto.cantidadProyectos
+      : obtenerCantidadProyectos();
     // con la calidad "Normal" las piezas en Auto NO se giran: se tratan como si estuvieran fijas
     // en "Normal" (tal cual quedaron capturadas en la tabla). Solo con "Completa" el optimizador
     // tiene libertad de girarlas 90° para aprovechar mejor el material.
@@ -4607,7 +4619,17 @@
   }
 
   function recalcular(){
-    const validacion = validarProyecto();
+    // se leen las filas de #piezasBody una sola vez por ciclo de recalculo y se empacan en un
+    // modelo temporal (no persistente, no guardado en state) para que validarProyecto() y
+    // leerPiezas() dejen de leer el DOM de piezas cada una por su cuenta.
+    const filasPiezas = leerFilasPiezasDesdeDOM();
+    const cantidadProyectosCiclo = obtenerCantidadProyectos();
+    const modeloProyecto = construirModeloProyecto({
+      filasPiezas,
+      cantidadProyectos: cantidadProyectosCiclo
+    });
+
+    const validacion = validarProyecto(modeloProyecto);
     if(!validacion.ok){
       mostrarErroresProyecto(validacion.errores);
       document.getElementById('resultadoPanel').style.display = 'none';
@@ -4634,7 +4656,7 @@
     const libre = !document.getElementById('corteGuillotina').checked;
     const nivelOptimizacion = obtenerNivelOptimizacion();
 
-    const {piezas, errores} = leerPiezas(parametrosCorte);
+    const {piezas, errores} = leerPiezas(parametrosCorte, modeloProyecto);
     mostrarErroresProyecto(errores);
 
     if(piezas.length === 0){
