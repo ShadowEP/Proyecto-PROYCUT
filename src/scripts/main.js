@@ -108,6 +108,10 @@
     construirModeloProyecto
   } = window.ProyCutProjectModel;
 
+  const {
+    prepararProyectoParaOptimizacion
+  } = window.ProyCutProjectPreparation;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -4629,47 +4633,39 @@
       cantidadProyectos: cantidadProyectosCiclo
     });
 
-    const validacion = validarProyecto(modeloProyecto);
-    if(!validacion.ok){
-      mostrarErroresProyecto(validacion.errores);
+    const preparacion = prepararProyectoParaOptimizacion({
+      modeloProyecto,
+      validarProyecto,
+      resolverParametrosCorte: resolverParametrosCorteEtapa4,
+      leerOpcionesProyecto: () => ({
+        precioCorte: parseFloat(document.getElementById('precioCorte').value) || 0,
+        precioCorteMetro: parseFloat(document.getElementById('precioCorteMetro').value) || 0,
+        modoPrecioCorte: document.getElementById('modoPrecioCortePorMetro').checked ? 'metro' : 'corte',
+        libre: !document.getElementById('corteGuillotina').checked,
+        nivelOptimizacion: obtenerNivelOptimizacion()
+      }),
+      leerPiezas
+    });
+    mostrarErroresProyecto(preparacion.errores);
+    if(!preparacion.ok){
       document.getElementById('resultadoPanel').style.display = 'none';
       document.getElementById('reportePanel').style.display = 'none';
       state.boards = [];
       state.ultimoReporte = null;
-      state.ultimoTotal = 0;
+      if(preparacion.etapa !== 'piezas') state.ultimoTotal = 0;
       return false;
     }
-    const parametrosCorte = resolverParametrosCorteEtapa4();
-    if(!parametrosCorte.ok){
-      mostrarErroresProyecto(parametrosCorte.errores);
-      document.getElementById('resultadoPanel').style.display = 'none';
-      document.getElementById('reportePanel').style.display = 'none';
-      state.boards = [];
-      state.ultimoReporte = null;
-      state.ultimoTotal = 0;
-      return false;
-    }
+    const parametrosCorte = preparacion.parametrosCorteProyecto;
     const kerf = parametrosCorte.kerf;
-    const precioCorte = parseFloat(document.getElementById('precioCorte').value) || 0;
-    const precioCorteMetro = parseFloat(document.getElementById('precioCorteMetro').value) || 0;
-    const modoPrecioCorte = document.getElementById('modoPrecioCortePorMetro').checked ? 'metro' : 'corte';
-    const libre = !document.getElementById('corteGuillotina').checked;
-    const nivelOptimizacion = obtenerNivelOptimizacion();
-
-    const {piezas, errores} = leerPiezas(parametrosCorte, modeloProyecto);
-    mostrarErroresProyecto(errores);
-
-    if(piezas.length === 0){
-      document.getElementById('resultadoPanel').style.display = 'none';
-      document.getElementById('reportePanel').style.display = 'none';
-      state.boards = [];
-      state.ultimoReporte = null;
-      return false;
-    }
-
-    // agrupar por material (batching)
-    const porMaterial = {};
-    piezas.forEach(p => { (porMaterial[p.material] = porMaterial[p.material] || []).push(p); });
+    const piezas = preparacion.piezas;
+    const porMaterial = preparacion.gruposPorMaterial;
+    const {
+      precioCorte,
+      precioCorteMetro,
+      modoPrecioCorte,
+      libre,
+      nivelOptimizacion
+    } = preparacion.opcionesProyecto;
 
     let totalCortes = 0, totalCorteMm = 0;
     const boardsAll = [];
