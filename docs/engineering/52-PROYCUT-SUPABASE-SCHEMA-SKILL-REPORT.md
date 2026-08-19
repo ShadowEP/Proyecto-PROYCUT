@@ -6,11 +6,11 @@ Propuesto para revisión.
 
 ## Versión
 
-1.3
+1.4
 
 ## Última actualización
 
-2026-08-18
+2026-08-19
 
 ## Propósito
 
@@ -147,8 +147,29 @@ La tensión `owner_id` vs. `company_id` señalada en la sección 3 y dejada como
 - No se determinó número definitivo de tablas, columnas, PK/FK, roles, políticas RLS SQL, triggers, RPC ni migraciones — permanecen como diseño técnico pendiente, igual que antes de esta revisión.
 - No se creó `supabase/`, SQL ni scripts. No se ejecutó `supabase init`. No se modificó `src/`, `index.html`, `AGENTS.md` ni `CLAUDE.md`. No se hizo commit ni push.
 
-## 10. Próximos pasos
+## 10. Próximos pasos (superado en parte por la sección 11)
 
 - Este reporte y la Skill quedan "Propuestos para revisión" — no se ejecuta commit ni push sin autorización explícita adicional del usuario.
 - La ambigüedad `owner_id` vs. `company_id` entre `44` y `45` está **resuelta a nivel conceptual** por la decisión 53 (workspace/membresía); lo que sigue pendiente es el diseño técnico exacto (tablas, columnas, roles, RLS) — ver sección 9.
 - Cuando el usuario autorice avanzar más allá de la documentación, el siguiente paso sigue siendo diseñar formalmente el esquema de `workspace`/membresía a partir de `53-PROYCUT-OWNERSHIP-DECISION.md`, antes de retomar `45-SUPABASE-INTEGRATION-PLAN.md` sección 27–28 (inicializar Supabase localmente en un commit aislado).
+
+## 11. Incorporación del modelo conceptual de membresías — `54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md` (2026-08-19, sesión posterior)
+
+El usuario formalizó en `docs/engineering/54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md` el modelo conceptual de workspace + membresías que la sección 9 dejaba pendiente de diseño técnico. Esta revisión actualizó la Skill `proycut-supabase-schema` para adoptar `54` como fuente canónica junto con `53`, sin diseñar SQL, sin crear migraciones ni ejecutar `supabase init`. Alcance de la tarea: exclusivamente `.agents/skills/proycut-supabase-schema/SKILL.md` y este reporte.
+
+**Qué se registra como auditable:**
+
+- **El documento 54 formalizó el modelo conceptual.** `54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md` (versión 1.0, estado "Modelo conceptual confirmado por el usuario") define formalmente el diagrama Auth User → Workspace Membership → Workspace → Project, sin reabrir la decisión de ownership ya tomada en `53`.
+- **La Skill ahora incorpora workspace + membership.** Se reescribió la sección "DECISIÓN CONFIRMADA DE OWNERSHIP Y DISEÑO TÉCNICO PENDIENTE" (renombrada "...Y MEMBRESÍAS, Y DISEÑO TÉCNICO PENDIENTE") para citar `53` y `54` como fuentes conjuntas, y se agregaron dentro de ella: el diagrama conceptual (sin tablas SQL), la lista completa de invariantes de `54` (proyecto → exactamente un workspace; usuario → uno o más workspaces; workspace → uno o más miembros; acceso remoto → membresía válida; al menos un owner por workspace; admin no sustituye a owner; member no administra configuración sensible por defecto; abandonar/eliminar usuario no transfiere proyectos automáticamente; cambiar de usuario no cambia el ownership del proyecto; datos derivados siguen sin ser fuente primaria), y la lista de candidatos futuros de nomenclatura (`workspaces`, `workspace_members`, `workspace_id`) marcados explícitamente como no implementados.
+- **Roles owner/admin/member están confirmados conceptualmente.** La Skill ahora declara explícitamente los tres roles mínimos y su semántica conceptual (owner: al menos uno por workspace, administra configuración sensible y membresías; admin: administra operación y proyectos, no sustituye al owner; member: trabaja con proyectos, no administra configuración sensible por defecto), dejando igual de explícito que los permisos CRUD exactos por tabla y rol **no** están decididos.
+- **El esquema SQL exacto sigue pendiente.** Se amplió la lista "DISEÑO TÉCNICO AÚN PENDIENTE" para incluir de forma explícita: tipos SQL, enums, índices, claims JWT y funciones RPC/triggers, además de lo ya listado (número de tablas, columnas, PK/FK, permisos exactos por rol, transferencia de ownership, invitaciones, abandono/eliminación de workspace, ownership de catálogos, RLS SQL definitiva). Se agregó una frase explícita: el antiguo esquema de 5 tablas de `45-SUPABASE-INTEGRATION-PLAN.md` **ya no puede convertirse directamente en una migración**, porque `workspace` y `workspace membership` son entidades propias del modelo, no una columna suelta en `projects`.
+- **No se creó código, SQL ni migraciones.** No se creó ni modificó ningún archivo bajo `supabase/`, `src/scripts/`, `index.html`, `CLAUDE.md` ni `AGENTS.md`. No se ejecutó `supabase init`. No se creó ninguna Skill nueva. No se hizo commit ni push.
+
+**Condición de detención añadida:** se agregó a "Condiciones para detenerse y pedir decisión explícita" un nuevo punto específico: cualquier tarea que intente diseñar SQL de workspace/membresía sin haber resuelto explícitamente, con el usuario, cada una de las seis decisiones pendientes de `54` (ownership de catálogos, permisos detallados de owner/admin/member, transferencia de ownership, invitaciones/membresías, abandono/eliminación de workspace, RLS definitiva) debe detenerse de inmediato.
+
+## 12. Próximos pasos (vigente)
+
+- Este reporte y la Skill quedan "Propuestos para revisión" — no se ejecuta commit ni push sin autorización explícita adicional del usuario.
+- El modelo conceptual de workspace/membresía está **formalizado** por `53` y `54`; lo que sigue pendiente es exclusivamente el diseño técnico exacto (número de tablas, columnas, tipos, PK/FK, enums, índices, permisos exactos por rol, RLS SQL, RPC, triggers, claims JWT) — ver sección 11.
+- Antes de diseñar ese esquema SQL, deben resolverse explícitamente con el usuario las seis decisiones pendientes listadas en `54` y repetidas como condición de detención en la Skill: ownership de catálogos, permisos detallados de owner/admin/member, transferencia de ownership, invitaciones/membresías, abandono/eliminación de workspace y RLS definitiva.
+- Solo después de ese diseño formal y aprobado corresponde retomar `45-SUPABASE-INTEGRATION-PLAN.md` sección 27–28 (inicializar Supabase localmente en un commit aislado).

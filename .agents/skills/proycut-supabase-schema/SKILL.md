@@ -1,6 +1,6 @@
 ---
 name: proycut-supabase-schema
-description: "Protege el diseño futuro del esquema Supabase de ProyCut: tablas, relaciones, PKs/FKs UUID, restricciones, índices, RLS, ownership por workspace/membresía, Auth futura, fuente vs. derivados, snapshots y doble fuente de verdad. Activar antes de diseñar/escribir cualquier tabla, migración SQL, RLS o RPC de persistencia, o al decidir dónde vive un dato nuevo. Adopta docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md como decisión canónica de ownership (workspace, no propietario individual); owner_id=auth.uid() de docs/engineering/45-SUPABASE-INTEGRATION-PLAN.md queda superado, esquema exacto pendiente. No diseña SQL real. No cubre fuente/derivado del código actual (usar proycut-project-model) ni persistencia local (usar proycut-persistence)."
+description: "Protege el diseño futuro del esquema Supabase de ProyCut: tablas, relaciones, PKs/FKs UUID, restricciones, índices, RLS, ownership por workspace/membresía, Auth futura, fuente vs. derivados, snapshots y doble fuente de verdad. Activar antes de diseñar/escribir cualquier tabla, migración SQL, RLS o RPC de persistencia, o al decidir dónde vive un dato nuevo. Adopta docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md y docs/engineering/54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md como fuentes canónicas de ownership y membresías (workspace + membership, roles owner/admin/member, no propietario individual); owner_id=auth.uid() de docs/engineering/45-SUPABASE-INTEGRATION-PLAN.md queda superado, esquema SQL exacto pendiente. No diseña SQL real. No cubre fuente/derivado del código actual (usar proycut-project-model) ni persistencia local (usar proycut-persistence)."
 metadata:
   type: proycut-domain
   scope: project
@@ -10,7 +10,7 @@ metadata:
 
 ## Propósito
 
-Proteger el diseño del esquema de Supabase de ProyCut **antes de que exista código real**: evitar que una migración, tabla o política se cree de forma improvisada, contradiga `53-PROYCUT-OWNERSHIP-DECISION.md` o `45-SUPABASE-INTEGRATION-PLAN.md`, mezcle datos fuente con datos derivados, o invente conceptos (nombre de proyecto, cliente, esquema exacto de `workspace`/membresía, `user_id` distinto de Auth, `company_id`/`organization_id`) que hoy no existen en el código ni tienen diseño técnico decidido. Esta Skill no diseña un esquema nuevo: adopta la decisión de ownership de `53-PROYCUT-OWNERSHIP-DECISION.md` (workspace/membresía, no propietario individual) y resume/hace cumplir, en lo que no depende de ownership, la propuesta técnica de fase 1 ya existente, marcando explícitamente qué queda pendiente de decisión.
+Proteger el diseño del esquema de Supabase de ProyCut **antes de que exista código real**: evitar que una migración, tabla o política se cree de forma improvisada, contradiga `53-PROYCUT-OWNERSHIP-DECISION.md`, `54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md` o `45-SUPABASE-INTEGRATION-PLAN.md`, mezcle datos fuente con datos derivados, o invente conceptos (nombre de proyecto, cliente, esquema SQL exacto de `workspace`/membresía, permisos exactos por rol, `user_id` distinto de Auth, `company_id`/`organization_id`) que hoy no existen en el código ni tienen diseño técnico decidido. Esta Skill no diseña un esquema nuevo: adopta la decisión de ownership de `53-PROYCUT-OWNERSHIP-DECISION.md` y el modelo conceptual de `54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md` (workspace + membership, roles `owner`/`admin`/`member`, no propietario individual) y resume/hace cumplir, en lo que no depende de ownership, la propuesta técnica de fase 1 ya existente, marcando explícitamente qué queda pendiente de decisión.
 
 ## Cuándo activar
 
@@ -19,7 +19,8 @@ Proteger el diseño del esquema de Supabase de ProyCut **antes de que exista có
 - Antes de diseñar o revisar políticas RLS o la función RPC transaccional de guardado.
 - Al decidir en qué tabla/columna debería vivir un dato nuevo de proyecto.
 - Al evaluar si un dato propuesto es fuente (debe guardarse) o derivado (debe recalcularse, no guardarse).
-- Al revisar si un cambio de esquema propuesto es consistente con la decisión de ownership de `53-PROYCUT-OWNERSHIP-DECISION.md` y con la propuesta técnica de fase 1 en `45-SUPABASE-INTEGRATION-PLAN.md` y `44-CURRENT-ARCHITECTURE-INVENTORY.md`.
+- Al revisar si un cambio de esquema propuesto es consistente con la decisión de ownership de `53-PROYCUT-OWNERSHIP-DECISION.md`, el modelo conceptual de `54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md` y la propuesta técnica de fase 1 en `45-SUPABASE-INTEGRATION-PLAN.md` y `44-CURRENT-ARCHITECTURE-INVENTORY.md`.
+- Al evaluar si un agente está a punto de diseñar SQL (tablas, RLS, RPC) de workspace/membresía sin haber resuelto primero las decisiones pendientes de `54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md` (ownership de catálogos, permisos detallados de owner/admin/member, transferencia de ownership, invitaciones/membresías, abandono/eliminación de workspace, RLS definitiva) — ver "Condiciones para detenerse".
 
 ## Cuándo NO activar
 
@@ -41,32 +42,84 @@ Confirmado por inspección directa, no por memoria:
 - La única persistencia real hoy es `localStorage` de preferencias visuales (ver `proycut-persistence`); ningún dato de proyecto persiste.
 - Por lo tanto, todo lo descrito en esta Skill bajo "ESQUEMA OBJETIVO" es diseño **"Propuesto para revisión"**, no código ni esquema aplicado. El primer cambio técnico autorizable sigue siendo la inicialización local de Supabase (`45-SUPABASE-INTEGRATION-PLAN.md` sección 27, Cambio 1), todavía no ejecutada.
 
-## DECISIÓN CONFIRMADA DE OWNERSHIP Y DISEÑO TÉCNICO PENDIENTE
+## DECISIÓN CONFIRMADA DE OWNERSHIP Y MEMBRESÍAS, Y DISEÑO TÉCNICO PENDIENTE
 
-**DECISIÓN CONFIRMADA** — `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md` es la fuente canónica de ownership:
+**DECISIÓN CONFIRMADA** — `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md` y `docs/engineering/54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md` son las fuentes canónicas de ownership y membresías. `54` es la extensión conceptual directa de `53`, no la reabre:
 
 - los proyectos pertenecen a un **workspace**, no directamente a un usuario individual;
 - los usuarios acceden a un proyecto mediante **membresía** a su workspace;
 - incluso un usuario individual tiene su propio workspace desde el primer proyecto;
+- un usuario puede pertenecer a uno o más workspaces; un workspace puede tener uno o más miembros;
+- usuario ↔ workspace se relacionan mediante **membresías** (Workspace Membership), no por comparación directa de identidad;
+- los roles mínimos confirmados dentro de un workspace son `owner`, `admin` y `member`; debe existir al menos un `owner` por workspace;
 - Auth identifica usuarios; la autorización de acceso a proyectos debe basarse en membresía activa al workspace propietario, nunca en comparar directamente contra el usuario autenticado;
+- el proyecto no pertenece directamente a `auth.uid()`;
 - esta decisión **reemplaza** el modelo de propietario individual (`owner_id = auth.uid()`) que proponía `45-SUPABASE-INTEGRATION-PLAN.md` para la fase 1 — ver "ESQUEMA OBJETIVO" y "RLS y ownership" más abajo, marcados como propuesta anterior superada.
 
-**DISEÑO TÉCNICO AÚN PENDIENTE** — la decisión 53 fija el modelo conceptual, pero explícitamente NO determina todavía:
+### Modelo conceptual mínimo (de `54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md`, sin tablas SQL todavía)
 
-- número definitivo de tablas (`workspaces`, `workspace_members` son candidatos de nomenclatura registrados en la decisión 53, no tablas implementadas);
-- columnas exactas, PKs/FKs exactas;
-- roles exactos dentro de un workspace;
-- cardinalidad de membresías (uno o varios workspaces por usuario);
+```text
+Auth User
+    |
+    | membership
+    v
+Workspace Membership
+    |
+    v
+Workspace
+    |
+    +--> Project
+    +--> Project
+    +--> futuros recursos compartidos
+```
+
+- **Auth User**: identidad autenticada gestionada por Auth; no es propietario directo de ningún proyecto; puede tener varias membresías, una por cada workspace al que pertenece.
+- **Workspace Membership**: relaciona un usuario con un workspace; contiene conceptualmente el rol (`owner`/`admin`/`member`) de ese usuario en ese workspace; relación muchos-a-muchos entre usuarios y workspaces.
+- **Workspace**: contenedor de ownership; posee proyectos; agrupa miembros mediante membresías; punto natural futuro para billing y recursos compartidos.
+- **Project**: pertenece exactamente a un workspace; su ownership se resuelve siempre a través del workspace, nunca directamente del usuario autenticado.
+
+Esto es un modelo conceptual, no un esquema de tablas: no fija PK/FK, tipos SQL, enums, índices, RLS SQL, RPC, triggers, claims JWT ni número definitivo de tablas — ver "DISEÑO TÉCNICO AÚN PENDIENTE" abajo.
+
+### Invariantes confirmadas (de `54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md`)
+
+- Todo proyecto debe pertenecer a exactamente un workspace.
+- Todo acceso remoto a un proyecto debe derivarse de una membresía válida.
+- Un usuario puede pertenecer a varios workspaces.
+- Un workspace puede tener varios usuarios.
+- Un workspace debe conservar al menos un `owner`.
+- `admin` no sustituye automáticamente al `owner`.
+- `member` no administra configuración sensible del workspace por defecto.
+- Cambiar de usuario no cambia el ownership del proyecto.
+- Abandonar un workspace no transfiere automáticamente sus proyectos al usuario que abandona.
+- Eliminar una cuenta de usuario no debe implicar automáticamente eliminar el workspace ni sus proyectos.
+- Los datos derivados (boards, geometría, costos calculados, reportes, SVG, DXF, Excel) siguen sin ser fuente primaria — esta decisión de ownership no altera esa regla ya establecida.
+
+### Candidatos futuros de nomenclatura (no implementados)
+
+Registrados en `53` y `54` únicamente como candidatos conceptuales para un futuro esquema técnico. No son tablas, columnas ni FKs reales; no se implementan en esta Skill ni en ningún documento leído hasta ahora:
+
+- `workspaces`
+- `workspace_members`
+- `workspace_id`
+
+**DISEÑO TÉCNICO AÚN PENDIENTE** — las decisiones 53 y 54 fijan el modelo conceptual y los roles mínimos, pero explícitamente NO determinan todavía:
+
+- número definitivo de tablas (`workspaces`, `workspace_members` son candidatos de nomenclatura, no tablas implementadas);
+- columnas exactas, PKs/FKs exactas, tipos SQL, enums, índices;
+- permisos CRUD/capacidades exactas de cada rol (`owner`/`admin`/`member`) por tabla;
+- cardinalidad de membresías más allá de "una o más" (ya confirmada conceptualmente);
+- transferencia de ownership, invitaciones y aceptación de membresías, abandono/eliminación de workspace;
+- ownership de catálogos compartidos (materiales, tapacantos, componentes maestros, cuando dejen de ser snapshots por proyecto);
 - políticas RLS SQL definitivas basadas en membresía;
-- triggers, RPC o migraciones.
+- funciones RPC, triggers, claims JWT o migraciones.
 
-Ningún contenido de esta Skill debe leerse como si el diseño técnico ya estuviera decidido, ni el modelo de ownership individual (`owner_id = auth.uid()`, sección "RLS y ownership") como una opción todavía vigente para ProyCut — quedó superado por la decisión 53, no pendiente de confirmación. Cualquier tarea que intente escribir una migración real de `projects` (o tablas relacionadas con ownership) antes de que exista un diseño formal de `workspace` + membresía aprobado explícitamente por el usuario debe **detenerse** — ver "Condiciones para detenerse".
+Ningún contenido de esta Skill debe leerse como si el diseño técnico ya estuviera decidido, ni el modelo de ownership individual (`owner_id = auth.uid()`, sección "RLS y ownership") como una opción todavía vigente para ProyCut — quedó superado por la decisión 53, no pendiente de confirmación. El antiguo esquema de 5 tablas de `45-SUPABASE-INTEGRATION-PLAN.md` (`projects`, `project_materials`, `project_edge_bands`, `project_parts`, `project_components`, con `owner_id` como único punto de ownership) **ya no puede convertirse directamente en una migración**: al introducir `workspace` y `workspace membership` como entidades propias del modelo (no como una columna suelta en `projects`), esas cinco tablas probablemente ya no son suficientes para representar el modelo completo, y ninguna de las dos nuevas entidades tiene todavía columnas, PK/FK ni RLS definidas. Cualquier tarea que intente escribir una migración real de `projects` (o tablas relacionadas con ownership) antes de que exista un diseño formal de `workspace` + membresía aprobado explícitamente por el usuario debe **detenerse** — ver "Condiciones para detenerse".
 
 ## ESQUEMA OBJETIVO — propuesta de fase 1, ownership superado por la decisión 53 (no implementada)
 
 Fuente única: `45-SUPABASE-INTEGRATION-PLAN.md`, secciones 4–7, 16–17, 23. Este resumen no sustituye al plan; ante cualquier duda de tipo exacto, constraint o nombre de columna, confirmar contra el plan, no memorizar desde aquí.
 
-**Aviso de vigencia:** las columnas y políticas de este resumen que usan `owner_id`/`auth.uid()` describen el patrón de propietario individual propuesto por el plan de fase 1. Ese modelo de ownership quedó **superado** por `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`: los proyectos pertenecen a un workspace, no a un `owner_id` individual. Este resumen se conserva como referencia histórica de la propuesta de fase 1 y como inventario de qué debe rediseñarse (relación de proyecto con workspace, RLS, índices dependientes de `owner_id`), no como esquema listo para implementar.
+**Aviso de vigencia:** las columnas y políticas de este resumen que usan `owner_id`/`auth.uid()` describen el patrón de propietario individual propuesto por el plan de fase 1. Ese modelo de ownership quedó **superado** por `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md` y `docs/engineering/54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md`: los proyectos pertenecen a un workspace, no a un `owner_id` individual, y el acceso se resuelve por membresía (roles `owner`/`admin`/`member`). Este resumen se conserva como referencia histórica de la propuesta de fase 1 y como inventario de qué debe rediseñarse (relación de proyecto con workspace, entidad de membresía, RLS, índices dependientes de `owner_id`), **no como esquema listo para implementar ni como base directa de una migración** — ver "el antiguo esquema de 5 tablas... ya no puede convertirse directamente en una migración" arriba.
 
 ### Tablas (5 — propuesta de fase 1; ownership individual superado por la decisión 53, ver aviso arriba)
 
@@ -157,21 +210,22 @@ Reglas de frontera (ver `proycut-architecture`): el SDK de Supabase vive únicam
 
 ## Datos NO inventados como hechos actuales — decisiones de diseño pendientes
 
-Estos campos **no existen hoy** en el código (confirmado por `proycut-project-model` mediante `grep` sin resultados) ni como tablas/columnas implementadas, aunque aparezcan mencionados como necesidad futura en `07-DATABASE.md`, `44-CURRENT-ARCHITECTURE-INVENTORY.md` o como candidatos de nomenclatura en `53-PROYCUT-OWNERSHIP-DECISION.md`:
+Estos campos **no existen hoy** en el código (confirmado por `proycut-project-model` mediante `grep` sin resultados) ni como tablas/columnas implementadas, aunque aparezcan mencionados como necesidad futura en `07-DATABASE.md`, `44-CURRENT-ARCHITECTURE-INVENTORY.md` o como candidatos de nomenclatura en `53-PROYCUT-OWNERSHIP-DECISION.md`/`54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md`:
 
 - nombre de proyecto (como concepto de negocio distinto del `name` de cabecera ya incluido en el plan);
 - cliente / `client_id`;
-- `workspace` / `workspaces` / `workspace_members` / `workspace_id` — término canónico ya confirmado por la decisión 53 para el modelo de ownership, pero **sin tabla, columna ni FK implementada**; son candidatos de nomenclatura, no esquema real;
+- `workspace` / `workspaces` / `workspace_members` / `workspace_id` — término canónico ya confirmado por las decisiones 53/54 para el modelo de ownership y membresía, pero **sin tabla, columna ni FK implementada**; son candidatos de nomenclatura, no esquema real;
 - `company_id` / `organization_id` — nomenclatura descartada por la decisión 53 en favor de `workspace`; no reintroducir como nombre de columna real;
-- `user_id` como concepto distinto de la identidad de Auth (roles, invitaciones, equipos dentro de un workspace).
+- permisos/capacidades exactas de `owner`/`admin`/`member` por tabla — los roles están confirmados conceptualmente por `54`, pero sus capacidades CRUD exactas no están implementadas ni tienen SQL;
+- `user_id` como concepto distinto de la identidad de Auth (invitaciones, equipos dentro de un workspace).
 
 Cualquier tarea que necesite alguno de estos campos debe tratarlo como **diseño técnico pendiente de definición formal**, no como algo ya decidido como esquema real — ver "DECISIÓN CONFIRMADA DE OWNERSHIP Y DISEÑO TÉCNICO PENDIENTE" arriba.
 
-## Tensión entre documentos canónicos — resuelta a nivel conceptual por la decisión 53
+## Tensión entre documentos canónicos — resuelta a nivel conceptual por las decisiones 53 y 54
 
-`44-CURRENT-ARCHITECTURE-INVENTORY.md` mencionaba `company_id`/"compañía o contexto mínimo", y `45-SUPABASE-INTEGRATION-PLAN.md` proponía `owner_id` para propietario individual: dos nomenclaturas distintas de ownership, ninguna decidida formalmente. `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md` resuelve esa ambigüedad: el término canónico interno es **`workspace`**, y el ownership del proyecto es por workspace/membresía — ni `owner_id` individual ni un `company_id` implícito. Esta Skill trata `53-PROYCUT-OWNERSHIP-DECISION.md` como la decisión de ownership vigente; `45-SUPABASE-INTEGRATION-PLAN.md` sigue siendo la referencia más detallada para columnas/constraints no relacionadas con ownership, y `44` conserva su descripción del monolito actual, ya alineada con `workspace` en sus secciones de persistencia.
+`44-CURRENT-ARCHITECTURE-INVENTORY.md` mencionaba `company_id`/"compañía o contexto mínimo", y `45-SUPABASE-INTEGRATION-PLAN.md` proponía `owner_id` para propietario individual: dos nomenclaturas distintas de ownership, ninguna decidida formalmente. `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md` resuelve esa ambigüedad: el término canónico interno es **`workspace`**, y el ownership del proyecto es por workspace/membresía — ni `owner_id` individual ni un `company_id` implícito. `docs/engineering/54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md` formaliza el modelo conceptual resultante (Auth User → Workspace Membership → Workspace → Project), confirma los roles mínimos `owner`/`admin`/`member` y sus invariantes, sin reabrir la decisión de `53`. Esta Skill trata `53` y `54` como las decisiones de ownership/membresía vigentes; `45-SUPABASE-INTEGRATION-PLAN.md` sigue siendo la referencia más detallada para columnas/constraints no relacionadas con ownership, y `44` conserva su descripción del monolito actual, ya alineada con `workspace` en sus secciones de persistencia.
 
-Lo que sigue sin decidirse (ver "DISEÑO TÉCNICO AÚN PENDIENTE" arriba) es el esquema SQL exacto de `workspace`/`workspace_members`/`workspace_id`: número de tablas, columnas, roles y RLS. No inventar ese esquema en esta Skill ni en ninguna tarea que la invoque; confirmar con el usuario antes de fijarlo en una migración real.
+Lo que sigue sin decidirse (ver "DISEÑO TÉCNICO AÚN PENDIENTE" arriba) es el esquema SQL exacto de `workspace`/`workspace_members`/`workspace_id`: número de tablas, columnas, tipos, PK/FK, enums, índices, permisos exactos por rol y RLS. No inventar ese esquema en esta Skill ni en ninguna tarea que la invoque; confirmar con el usuario antes de fijarlo en una migración real.
 
 ## Prohibiciones
 
@@ -191,8 +245,15 @@ Lo que sigue sin decidirse (ver "DISEÑO TÉCNICO AÚN PENDIENTE" arriba) es el 
 
 ## Condiciones para detenerse y pedir decisión explícita
 
-- **Ownership:** el modelo de ownership YA está confirmado (workspace/membresía, `53-PROYCUT-OWNERSHIP-DECISION.md`) — no volver a pedir esa confirmación al usuario. Sí debe detenerse cualquier tarea que use `owner_id = auth.uid()` como ownership real del proyecto, o que intente fijar una columna/tabla de ownership en una migración real antes de que el esquema de `workspace`/membresía esté formalmente diseñado y aprobado.
+- **Ownership:** el modelo de ownership YA está confirmado (workspace/membresía, `53-PROYCUT-OWNERSHIP-DECISION.md` y `54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md`) — no volver a pedir esa confirmación al usuario. Sí debe detenerse cualquier tarea que use `owner_id = auth.uid()` como ownership real del proyecto, o que intente fijar una columna/tabla de ownership en una migración real antes de que el esquema de `workspace`/membresía esté formalmente diseñado y aprobado.
 - **Migración antes de esquema formal:** cualquier intento de escribir, aplicar o aprobar una migración SQL real de `projects` (o tablas relacionadas con ownership) antes de que exista un diseño formal de `workspace` + membresía (tablas, columnas, roles, RLS) aprobado explícitamente por el usuario — detenerse de inmediato, sin excepciones, aunque la tarea solo pida "adaptar" el esquema de 5 tablas de la propuesta de fase 1.
+- **Diseño de SQL de workspace/membresía sin decisiones previas resueltas:** cualquier tarea que intente diseñar SQL (tablas, columnas, RLS, RPC, triggers) para `workspace`/`workspace_members` sin haber resuelto explícitamente primero, con el usuario, cada una de estas decisiones pendientes de `54-PROYCUT-WORKSPACE-MEMBERSHIP-MODEL.md` — detenerse de inmediato si falta cualquiera de ellas:
+  - ownership de catálogos (materiales, tapacantos, componentes maestros compartidos);
+  - permisos detallados de `owner`/`admin`/`member` (capacidades CRUD exactas por tabla, gestión de miembros, configuración sensible);
+  - transferencia de ownership (cómo se transfiere el rol `owner` a otro miembro);
+  - invitaciones y aceptación de membresías;
+  - abandono/eliminación de workspace (qué ocurre con proyectos, membresías y datos asociados);
+  - RLS definitiva (forma exacta de las políticas que validan membresía activa).
 - **Usuario vs. organización:** ya resuelto a nivel conceptual — el término canónico es `workspace`, no `company_id`/`organization_id` (ver "Tensión entre documentos canónicos" arriba). Cualquier tarea que reintroduzca `company_id`/`organization_id` como nombre de columna real, o que fije roles/equipos concretos dentro de un workspace, debe detenerse: esos detalles siguen pendientes de diseño técnico.
 - **IDs:** cualquier ambigüedad entre UUID remoto, `local_catalog_id`, SKU, nombre o `source_row_id` como identidad — confirmar cuál es la identidad autoritativa antes de diseñar una FK.
 - **Snapshots:** duda sobre si un dato nuevo debe guardarse como snapshot del proyecto o como referencia a un catálogo (que todavía no existe como tabla remota) — no asumir, preguntar.
