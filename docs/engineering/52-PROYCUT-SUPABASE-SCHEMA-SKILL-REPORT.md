@@ -6,7 +6,7 @@ Propuesto para revisión.
 
 ## Versión
 
-1.2
+1.3
 
 ## Última actualización
 
@@ -134,8 +134,21 @@ Tras una revisión pedida explícitamente por el usuario, se corrigió lenguaje 
 
 Reglas conservadas sin cambio (verificadas, no tocadas): datos fuente sí se persisten; resultados derivados (boards, posiciones de piezas, free rectangles, costos, reportes, SVG, DXF, Excel) no son fuente primaria; snapshots de proyecto distintos de referencias futuras a catálogo; ninguna migración, SQL real ni `supabase init` fueron creados o ejecutados en esta revisión.
 
-## 9. Próximos pasos
+## 9. Revisión tras la decisión de ownership por workspace (2026-08-18, sesión posterior)
+
+La tensión `owner_id` vs. `company_id` señalada en la sección 3 y dejada como "decisión pendiente" en la sección 8 fue resuelta por el usuario mediante `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`: los proyectos pertenecen a un **workspace**, al que los usuarios acceden mediante **membresía** — no a un usuario individual ni a un `company_id` implícito. Esta revisión actualizó la Skill y sus documentos de referencia para reflejar esa decisión, sin diseñar el esquema SQL exacto (sigue pendiente) ni crear código o migraciones.
+
+**Qué cambió respecto a la sesión anterior (sección 8):**
+- El modelo de ownership individual (`owner_id = auth.uid()`) dejó de tratarse como "propuesta no definitiva, sujeta a confirmación" y pasó a tratarse como **superado** — la decisión de ownership ya está tomada (workspace/membresía); lo que sigue pendiente es solo el diseño técnico exacto (tablas, columnas, roles, RLS).
+- Se agregó a `SKILL.md` la sección "DECISIÓN CONFIRMADA DE OWNERSHIP Y DISEÑO TÉCNICO PENDIENTE", reemplazando "PROPUESTA ACTUAL DE FASE 1 y DECISIÓN PENDIENTE".
+- "Tensión entre documentos canónicos" se reescribió como resuelta a nivel conceptual por la decisión 53 (aunque el esquema SQL exacto de `workspace`/`workspace_members`/`workspace_id` sigue sin definirse).
+- Se agregó una condición de detención explícita en "Condiciones para detenerse": cualquier intento de escribir una migración real de `projects` antes de que exista un diseño formal de `workspace` + membresía aprobado por el usuario.
+- Se actualizaron `44-CURRENT-ARCHITECTURE-INVENTORY.md` (secciones 12, 13, 15, 16, 17, 18, 20, 21) y `45-SUPABASE-INTEGRATION-PLAN.md` (secciones "Decisiones rectoras", 4, 5, 15, 16, 25, 26, 27, "Resumen final") para dejar de presentar `owner_id`/"propietario individual"/`company_id` como modelo vigente: `45` marca explícitamente su propuesta de 5 tablas y RLS como "PROPUESTA ANTERIOR SUPERADA EN SU MODELO DE OWNERSHIP POR LA DECISIÓN 53", conservando como válido lo que no depende de ownership (fuente vs. derivado, snapshots, guardado transaccional, versionado, RLS-desde-el-inicio como principio, aislamiento, repositorio/caso de uso, modo local).
+- No se determinó número definitivo de tablas, columnas, PK/FK, roles, políticas RLS SQL, triggers, RPC ni migraciones — permanecen como diseño técnico pendiente, igual que antes de esta revisión.
+- No se creó `supabase/`, SQL ni scripts. No se ejecutó `supabase init`. No se modificó `src/`, `index.html`, `AGENTS.md` ni `CLAUDE.md`. No se hizo commit ni push.
+
+## 10. Próximos pasos
 
 - Este reporte y la Skill quedan "Propuestos para revisión" — no se ejecuta commit ni push sin autorización explícita adicional del usuario.
-- La tensión `owner_id` vs. `company_id` entre `44` y `45` documentada en la sección 3 sigue siendo una **decisión pendiente**, no resuelta por ninguno de los dos documentos por sí solo; debería resolverse explícitamente (probablemente actualizando `44` para alinearla con el alcance propuesto en `45`, o viceversa) antes de escribir la primera migración real — no se resuelve en esta tarea por no ser el alcance pedido.
-- Cuando el usuario autorice avanzar más allá de la documentación, el siguiente paso sigue siendo `45-SUPABASE-INTEGRATION-PLAN.md` sección 27–28: inicializar Supabase localmente en un commit aislado.
+- La ambigüedad `owner_id` vs. `company_id` entre `44` y `45` está **resuelta a nivel conceptual** por la decisión 53 (workspace/membresía); lo que sigue pendiente es el diseño técnico exacto (tablas, columnas, roles, RLS) — ver sección 9.
+- Cuando el usuario autorice avanzar más allá de la documentación, el siguiente paso sigue siendo diseñar formalmente el esquema de `workspace`/membresía a partir de `53-PROYCUT-OWNERSHIP-DECISION.md`, antes de retomar `45-SUPABASE-INTEGRATION-PLAN.md` sección 27–28 (inicializar Supabase localmente en un commit aislado).

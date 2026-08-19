@@ -2,15 +2,23 @@
 
 ## Estado
 
-Propuesto para revisión antes de cualquier inicialización o implementación.
+Propuesto para revisión antes de cualquier inicialización o implementación. **El modelo de ownership de este plan (propietario individual, `owner_id = auth.uid()`) quedó superado por la decisión registrada en `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`** — ver "Aviso de vigencia — ownership" más abajo antes de leer el resto del documento.
 
 ## Versión
 
-1.0
+1.1
 
 ## Última actualización
 
-2026-08-05
+2026-08-18
+
+## Aviso de vigencia — ownership (2026-08-18)
+
+El modelo de ownership propuesto en este plan — propietario individual mediante `owner_id = auth.uid()` — es **PROPUESTA ANTERIOR SUPERADA EN SU MODELO DE OWNERSHIP POR LA DECISIÓN 53** (`docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`). Esa decisión confirma que los proyectos pertenecen a un **workspace**, al que los usuarios acceden mediante **membresía**, incluso cuando el workspace tiene un único miembro. Cualquier mención de `owner_id`, "propietario individual" o RLS basada directamente en `auth.uid()` en las secciones siguientes debe leerse en ese sentido histórico, no como diseño vigente para una migración real.
+
+Siguen siendo válidos de este plan, en la medida en que no dependan del modelo de ownership: la separación de datos fuente vs. derivados (secciones 1–3), los snapshots de materiales/tapacantos/componentes (sección 7), el guardado transaccional (secciones 9, 23), el versionado optimista (`version`/`schema_version`), la exigencia de seguridad/RLS desde el inicio como principio general (sin fijar aún el predicado exacto), el aislamiento de datos entre proyectos, la separación repositorio/caso de uso (sección 12), el modo local sin backend (sección 21) y la prohibición de persistir boards/SVG/DXF/Excel/costos derivados (secciones 3, 24).
+
+Quedan pendientes de rediseño antes de migrar, a partir de la decisión 53: las tablas y columnas relacionadas con ownership (`owner_id` en `projects` y cualquier índice que dependa de él), la relación exacta de proyecto con workspace, el modelo de membresías, las políticas RLS que hoy comparan directamente contra `owner_id = auth.uid()`, cualquier RPC que asuma `owner_id` (`save_project_v1` conceptual) y el conteo definitivo de tablas (hoy 5, sujeto a incorporar `workspaces`/`workspace_members` u otras). Ninguno de esos nombres está decidido; ver `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md` para los candidatos de nomenclatura, todavía no implementados.
 
 ## Propósito
 
@@ -22,7 +30,7 @@ Definir cómo incorporar persistencia de proyectos a ProyCut de forma incrementa
 - El DOM sigue siendo la fuente editable del proyecto activo durante la transición; Supabase es la fuente durable de la última versión guardada.
 - La carga siempre hidrata entradas y ejecuta el pipeline existente; nunca restaura `boards` o HTML calculados.
 - La integración usa cliente, repositorio y servicio de aplicación separados.
-- El alcance es de propietario individual. No incluye multiempresa, equipos ni roles avanzados.
+- El alcance es de propietario individual. No incluye multiempresa, equipos ni roles avanzados. **Modelo de ownership superado por la decisión 53 — ver "Aviso de vigencia — ownership" arriba; el aislamiento real debe redefinirse por workspace/membresía, no por "propietario individual".**
 - No se habilita acceso remoto desde el navegador sin Auth y RLS efectivas.
 
 ## 1. Alcance inicial de persistencia
@@ -82,6 +90,8 @@ Son resultados reconstruibles. Guardarlos duplicaría fuentes de verdad y los vo
 
 ## 4. Tablas mínimas propuestas
 
+**PROPUESTA ANTERIOR SUPERADA EN SU MODELO DE OWNERSHIP POR LA DECISIÓN 53** (ver "Aviso de vigencia — ownership" arriba). El conteo de cinco tablas, sus columnas de ownership y sus relaciones de propiedad fueron pensados para propietario individual y deben rediseñarse hacia workspace/membresía antes de migrar; la separación fuente/derivado y snapshots que motivan estas tablas sigue siendo válida.
+
 La primera migración funcional propone cinco tablas:
 
 1. `projects`;
@@ -99,7 +109,7 @@ No se crean `companies`, clientes, roles, catálogos globales ni tablas de resul
 | Columna | Tipo propuesto | Regla |
 |---|---|---|
 | `id` | `uuid` | PK, `gen_random_uuid()` |
-| `owner_id` | `uuid` | NOT NULL, FK a `auth.users(id)` |
+| `owner_id` *(superado — ver nota)* | `uuid` | NOT NULL, FK a `auth.users(id)` |
 | `name` | `text` | NOT NULL, longitud controlada |
 | `status` | `text` | NOT NULL, inicialmente solo `draft` |
 | `schema_version` | `smallint` | NOT NULL, inicia en 1 |
@@ -110,6 +120,8 @@ No se crean `companies`, clientes, roles, catálogos globales ni tablas de resul
 | `created_at` | `timestamptz` | NOT NULL, default `now()` |
 | `updated_at` | `timestamptz` | NOT NULL, default `now()` |
 | `deleted_at` | `timestamptz` | NULL; eliminación lógica |
+
+**Nota sobre `owner_id`:** esta columna refleja el modelo de propietario individual, **superado por la decisión 53** (`docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`). El ownership real será por workspace/membresía; la columna, su FK y cualquier índice derivado (ver sección 5, índice `(owner_id, updated_at desc)`) deben rediseñarse antes de escribir esta tabla como migración real. Se conserva aquí como referencia histórica de la propuesta de fase 1, no como contrato vigente.
 
 `cut_settings` es apropiado porque la configuración jerárquica ya es un objeto versionable y no se consultará por cada clave en la primera fase. No debe convertirse en contenedor genérico: su forma exacta queda definida por el DTO y validada en aplicación/pruebas.
 
@@ -187,7 +199,7 @@ Forma conceptual:
 | `quantity` | `integer` | NOT NULL, >= 0 |
 | `unit_price` | `numeric(14,4)` | NOT NULL, >= 0 |
 
-No se guarda subtotal. Todas las tablas hijas incluyen índice por `project_id`; `projects` incluye índice por `(owner_id, updated_at desc)` filtrado por `deleted_at is null`.
+No se guarda subtotal. Todas las tablas hijas incluyen índice por `project_id`; `projects` incluye índice por `(owner_id, updated_at desc)` filtrado por `deleted_at is null` — índice dependiente de `owner_id`, superado por la decisión 53, debe rediseñarse para el contexto de workspace/membresía.
 
 ## 6. Estrategia para proyectos y piezas
 
@@ -347,29 +359,31 @@ La `.gitignore` actual ya ignora `.env` y `.env.*`, y conserva `!.env.example`. 
 
 **Auth sí es necesaria antes de que el navegador lea o escriba un proyecto remoto de forma segura.** Sin usuario autenticado, una política para el rol `anon` convertiría los proyectos en datos públicos o exigiría un secreto que no puede vivir en frontend.
 
-Alcance inicial de Auth cuando corresponda:
+Alcance inicial de Auth propuesto por esta fase 1 — **PROPUESTA ANTERIOR SUPERADA EN SU MODELO DE OWNERSHIP POR LA DECISIÓN 53**, ver "Aviso de vigencia — ownership" arriba:
 
 - un usuario individual;
 - sesión administrada por Supabase Auth;
 - `projects.owner_id = auth.uid()`;
 - sin empresas, invitaciones, equipos ni roles avanzados.
 
-Auth futura podrá incorporar recuperación, proveedores adicionales y transición de ownership a un contexto empresarial. No se implementará Auth completa en el mismo commit que la persistencia funcional.
+Auth identifica usuarios; conforme a la decisión 53, la autorización de acceso a un proyecto debe basarse en membresía activa al workspace propietario, no en `owner_id = auth.uid()` directo. Auth futura podrá incorporar recuperación, proveedores adicionales y roles dentro de un workspace. No se implementará Auth completa en el mismo commit que la persistencia funcional.
 
 ## 16. RLS
 
-RLS debe habilitarse en las cinco tablas desde su migración.
+**PROPUESTA ANTERIOR SUPERADA EN SU MODELO DE OWNERSHIP POR LA DECISIÓN 53** (ver "Aviso de vigencia — ownership" arriba). El principio general —RLS habilitada desde la misma migración que crea las tablas, sin excepciones "temporales"— sigue vigente; el predicado concreto de las políticas debe rediseñarse hacia membresía al workspace en vez de comparar contra `owner_id`.
 
-- `projects`: `select/insert/update/delete` solo cuando `owner_id = auth.uid()`; insert exige el mismo valor.
-- Hijas: acceso solo si existe el proyecto padre activo cuyo `owner_id = auth.uid()`.
-- Las políticas no confían en un `owner_id` proporcionado por UI para autorizar.
-- La RPC de guardado usa `security invoker` siempre que sea posible y valida ownership/version dentro de la transacción.
+RLS debe habilitarse en las tablas desde su migración.
+
+- `projects`: el patrón propuesto por esta fase 1 era `select/insert/update/delete` solo cuando `owner_id = auth.uid()`; insert exigiría el mismo valor. Este predicado queda superado: la política real deberá comprobar membresía activa al workspace propietario del proyecto.
+- Hijas: el mismo patrón superado condicionaba el acceso a que el proyecto padre activo tuviera `owner_id = auth.uid()`; debe rediseñarse en los mismos términos que la cabecera.
+- Las políticas no deben confiar en un identificador de ownership proporcionado por UI para autorizar, sea cual sea el modelo final (`auth.uid()`/sesión autenticada en el propio predicado).
+- La RPC de guardado usa `security invoker` siempre que sea posible y valida ownership/version dentro de la transacción — el ownership a validar es membresía al workspace, no `owner_id`.
 - `anon` no tiene políticas de acceso a datos de proyecto.
 - `deleted_at` se filtra en listados y cargas normales.
 
-Pruebas obligatorias: usuario A no puede leer, relacionar, actualizar ni borrar datos de B; no autenticado no puede acceder; una pieza no puede apuntar a material/tapacanto de otro proyecto.
+Pruebas obligatorias (adaptar sujetos de "usuario" a "workspace/membresía" al rediseñar): un usuario sin membresía en el workspace de un proyecto no puede leer, relacionar, actualizar ni borrar sus datos; no autenticado no puede acceder; una pieza no puede apuntar a material/tapacanto de otro proyecto.
 
-Esto es aislamiento por propietario, no multiempresa.
+Esto era aislamiento por propietario individual en la propuesta de fase 1; la decisión 53 lo reemplaza por aislamiento por workspace, con acceso mediante membresía — no multiempresa en el sentido de organizaciones con jerarquías avanzadas, pero sí compatible desde el inicio con más de un miembro por workspace.
 
 ## 17. Migraciones
 
@@ -516,10 +530,12 @@ La función no calcula boards/costos. Debe limitar `search_path`, usar tipos con
 
 ### Seguridad
 
+Categorías de prueba propuestas por esta fase 1 en términos de `owner_id`; ownership superado por la decisión 53 — al rediseñar, adaptar "propietario"/`owner_id` a "miembro del workspace propietario"/membresía, conservando el mismo tipo de cobertura:
+
 - anónimo sin acceso;
-- propietario con CRUD de sus proyectos;
-- usuario diferente sin acceso a cabecera ni hijos;
-- intento de cambiar `owner_id` rechazado;
+- miembro del workspace con CRUD de los proyectos de ese workspace;
+- usuario sin membresía en el workspace sin acceso a cabecera ni hijos;
+- intento de cambiar la relación de ownership (workspace del proyecto) rechazado;
 - RPC no evade RLS/ownership;
 - ninguna clave privilegiada en archivos servidos o Git.
 
@@ -551,11 +567,11 @@ Las pruebas manuales críticas existentes continúan: plantillas del reporte, dr
 
 1. **Plan aprobado:** contrato, alcance, riesgos y decisiones cerradas.
 2. **Base local:** CLI/configuración reproducible, sin app conectada.
-3. **Esquema mínimo:** cinco tablas, constraints, RPC y RLS probadas localmente.
+3. **Esquema mínimo:** tablas, constraints, RPC y RLS probadas localmente — el conteo y las columnas de ownership de la propuesta de fase 1 (5 tablas, `owner_id`) están superados por la decisión 53 y deben rediseñarse hacia workspace/membresía antes de esta fase.
 4. **Cliente aislado:** configuración publicable y fábrica, aún sin botones.
 5. **Repositorio:** CRUD/RPC probado con cliente falso y local.
 6. **Persistencia:** DTO y servicio de aplicación con modo remoto desactivable.
-7. **Auth mínima:** usuario propietario, sin roles/equipos.
+7. **Auth mínima:** usuario autenticado con membresía a su workspace, sin roles avanzados — reemplaza el "usuario propietario" de la propuesta de fase 1, superado por la decisión 53.
 8. **Adaptador de snapshot/hidratación:** sin red en sus pruebas.
 9. **Guardar remoto:** acción explícita y estados de error.
 10. **Cargar/listar:** protección de cambios locales y recálculo único.
@@ -575,10 +591,10 @@ Cada fase debe poder revertirse al commit anterior y mantener el cálculo local.
 
 ### Cambio 2 — Primera migración y RLS
 
-- Objetivo: implementar tablas, constraints, índices, función transaccional y políticas del propietario.
+- Objetivo: implementar tablas, constraints, índices, función transaccional y políticas de acceso. **No ejecutable tal cual**: el esquema de ownership de esta fase 1 (`owner_id`, "políticas del propietario") está superado por la decisión 53; requiere rediseño formal de workspace/membresía antes de escribirse como migración real — ver "Aviso de vigencia — ownership" arriba y la Skill `proycut-supabase-schema`.
 - Archivos esperados: `supabase/migrations/<timestamp>_create_initial_project_schema.sql`; `supabase/seed.sql` solo si las pruebas requieren fixtures sintéticos.
 - Verificación: reset desde cero, pruebas SQL de integridad, atomicidad y aislamiento.
-- Riesgo: diseñar capacidades fuera del alcance o depender de Auth UI todavía inexistente.
+- Riesgo: diseñar capacidades fuera del alcance, depender de Auth UI todavía inexistente, o migrar con un modelo de ownership ya superado.
 - Commit: `feat(database): add initial project persistence schema`.
 
 ### Cambio 3 — Contrato y repositorio sin UI
@@ -607,9 +623,10 @@ No debe crear migraciones, proyecto remoto, cliente JavaScript, variables de pro
 
 ## Resumen final
 
-- **Tablas iniciales:** `projects`, `project_materials`, `project_edge_bands`, `project_parts`, `project_components`.
-- **Datos persistidos:** metadatos/versiones, cantidad, configuración de corte/optimización/precios, filas fuente y snapshots project-scoped de materiales, tapacantos y componentes.
-- **Datos recalculados:** boards, posiciones, rectángulos libres, sobrantes, fronteras, cortes, costos, total, reporte, SVG, Excel y DXF.
-- **¿Auth es necesaria al inicio?** No para inicialización y migraciones locales; sí antes de permitir persistencia remota segura desde el navegador.
-- **Primer cambio técnico:** ejecutar y documentar `supabase init` local en un commit aislado, sin esquema ni conexión de aplicación.
-- **Riesgos principales:** doble fuente de verdad, hidratación incompleta, referencias/IDs, falta de atomicidad, RLS débil, secretos frontend, decimales, concurrencia y pérdida del modo local.
+- **Ownership:** el modelo de esta fase 1 (propietario individual, `owner_id = auth.uid()`) quedó **superado** por `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md` — los proyectos pertenecen a un workspace, accedido por membresía. Ver "Aviso de vigencia — ownership" al inicio del documento.
+- **Tablas iniciales (propuesta de fase 1, ownership superado, conteo y columnas de propiedad sujetas a rediseño):** `projects`, `project_materials`, `project_edge_bands`, `project_parts`, `project_components`.
+- **Datos persistidos:** metadatos/versiones, cantidad, configuración de corte/optimización/precios, filas fuente y snapshots project-scoped de materiales, tapacantos y componentes — sigue vigente, independiente del ownership.
+- **Datos recalculados:** boards, posiciones, rectángulos libres, sobrantes, fronteras, cortes, costos, total, reporte, SVG, Excel y DXF — sigue vigente.
+- **¿Auth es necesaria al inicio?** No para inicialización y migraciones locales; sí antes de permitir persistencia remota segura desde el navegador. La autorización real deberá validar membresía al workspace, no `owner_id`.
+- **Primer cambio técnico:** ejecutar y documentar `supabase init` local en un commit aislado, sin esquema ni conexión de aplicación — sigue siendo el primer paso, no depende del ownership.
+- **Riesgos principales:** doble fuente de verdad, hidratación incompleta, referencias/IDs, falta de atomicidad, RLS débil, secretos frontend, decimales, concurrencia, pérdida del modo local, y migrar con un modelo de ownership ya superado por la decisión 53.

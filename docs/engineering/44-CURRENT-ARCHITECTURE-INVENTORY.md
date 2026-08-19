@@ -2,15 +2,15 @@
 
 ## Estado
 
-Final para cierre de la modularización previa a Supabase.
+Final para cierre de la modularización previa a Supabase. Las secciones 12, 13, 15, 16, 17, 18 y 21 que mencionaban `company_id`/contexto de "empresa" como ownership de la primera migración fueron alineadas conceptualmente con la decisión de ownership por workspace/membresía registrada en `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md` (2026-08-18); el esquema SQL exacto (tablas, columnas, PK/FK) sigue sin definirse y debe diseñarse a partir de ese documento antes de escribir SQL.
 
 ## Versión
 
-1.0
+1.1
 
 ## Última actualización
 
-2026-08-05
+2026-08-18
 
 ## Alcance
 
@@ -341,7 +341,7 @@ Estructura recomendada para evaluar e implementar después de este inventario:
 ### `repositories/project-repository.js`
 
 - Responsabilidad: implementar operaciones de datos para proyectos y piezas; mapear filas de base de datos a DTOs; manejar operaciones multi-tabla y errores.
-- Permitido: `ProyCutSupabaseClient`, nombres de tablas, contexto explícito de empresa, mapeadores y contratos de persistencia.
+- Permitido: `ProyCutSupabaseClient`, nombres de tablas, contexto explícito de workspace/membresía (ver `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`), mapeadores y contratos de persistencia.
 - Prohibido: `document`, `state`, `recalcular`, render, preferencias visuales y cálculos de boards/costos.
 - Global sugerido: `window.ProyCutProjectRepository`.
 - Consumidores: servicio `project-persistence`, no botones.
@@ -358,11 +358,11 @@ El punto exacto de conexión es: **controlador UI → `ProyCutProjectPersistence
 
 ## 13. Datos a persistir primero
 
-El mínimo real debe representar una entrada reproducible, no todo el modelo empresarial futuro.
+El mínimo real debe representar una entrada reproducible, no todo el modelo de organización futuro.
 
 **Guardar en la primera fase funcional:**
 
-- ID UUID y `company_id` explícito, nombre/título, versión de formato y timestamps del proyecto;
+- ID UUID del proyecto y su pertenencia a un workspace (ownership por workspace/membresía, no por usuario individual — ver `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`; el nombre exacto de la columna/relación de workspace todavía no está definido), nombre/título, versión de formato y timestamps del proyecto;
 - filas de piezas en orden: cantidad, largo, ancho, material, giro, tipo de tapacanto, lados y cualquier etiqueta/número fuente necesario;
 - `cantidadProyectos`;
 - parámetros de corte que alteran el resultado: kerf, modo de corte, márgenes, dimensión de tablero seleccionada/efectiva, calidad y modos/precios necesarios para reconstruir costos;
@@ -371,7 +371,7 @@ El mínimo real debe representar una entrada reproducible, no todo el modelo emp
 
 **No guardar inicialmente:** preferencias visuales (seguirán en `localStorage`), catálogos completos, boards, pestaña activa, `ultimoTotal`, `ultimoReporte`, geometría o archivos exportados.
 
-El modelo corporativo objetivo exige `companies` y control de tenant. El primer dataset no debe fingir que el prototipo ya posee clientes, usuarios, roles o ramas en UI; esos prerrequisitos se resolverán en el plan y migraciones, con contexto de empresa explícito.
+El modelo objetivo exige que cada proyecto pertenezca a un workspace y que el acceso de usuarios se resuelva por membresía, conforme a `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`. El primer dataset no debe fingir que el prototipo ya posee clientes, roles avanzados o ramas en UI; el esquema exacto de workspace y membresía (tablas, columnas, PK/FK, roles) sigue sin definirse y deberá rediseñarse a partir de esa decisión antes de escribir SQL.
 
 ## 14. Datos derivados
 
@@ -392,11 +392,13 @@ Todas las operaciones deben devolver `Promise<{ ok: true, ... } | { ok: false, e
 
 | Operación | Entrada | Salida exitosa | Errores esperados |
 |---|---|---|---|
-| `guardarProyecto` | `{ companyId, proyecto: ProyectoPersistible, expectedVersion? }` | `{ proyecto: ProyectoPersistido }` con ID, versión y timestamps | `validacion`, `no-autorizado`, `conflicto`, `red`, `persistencia-parcial`, `no-disponible`. |
-| `cargarProyecto` | `{ companyId, projectId }` | `{ proyecto }` completo con filas ordenadas | `validacion`, `no-encontrado`, `no-autorizado`, `datos-incompatibles`, `red`. |
+| `guardarProyecto` | `{ workspaceContext, proyecto: ProyectoPersistible, expectedVersion? }` | `{ proyecto: ProyectoPersistido }` con ID, versión y timestamps | `validacion`, `no-autorizado`, `conflicto`, `red`, `persistencia-parcial`, `no-disponible`. |
+| `cargarProyecto` | `{ workspaceContext, projectId }` | `{ proyecto }` completo con filas ordenadas | `validacion`, `no-encontrado`, `no-autorizado`, `datos-incompatibles`, `red`. |
 | `actualizarProyecto` | Igual que guardar, con ID y versión requerida | Proyecto actualizado y nueva versión | Los anteriores más `conflicto-de-version`. Puede ser alias semántico de upsert solo si conserva concurrencia. |
-| `eliminarProyecto` | `{ companyId, projectId, expectedVersion? }` | `{ projectId, deletedAt }` | `no-encontrado`, `no-autorizado`, `conflicto`, `red`. Preferir soft delete. |
-| `listarProyectos` | `{ companyId, limit?, cursor?, includeDeleted? }` | `{ items, nextCursor }`, solo metadatos | `validacion`, `no-autorizado`, `red`. |
+| `eliminarProyecto` | `{ workspaceContext, projectId, expectedVersion? }` | `{ projectId, deletedAt }` | `no-encontrado`, `no-autorizado`, `conflicto`, `red`. Preferir soft delete. |
+| `listarProyectos` | `{ workspaceContext, limit?, cursor?, includeDeleted? }` | `{ items, nextCursor }`, solo metadatos | `validacion`, `no-autorizado`, `red`. |
+
+`workspaceContext` representa conceptualmente el ownership por workspace/membresía confirmado en `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md` (por ejemplo, el workspace activo y la membresía del usuario autenticado). Su nombre exacto de campo, forma concreta (workspace_id, rol, etc.) y las columnas reales quedan pendientes de diseño y no deben tratarse como decididas; sustituye al `companyId` de una versión anterior de este documento, que asumía ownership individual/empresa sin decisión confirmada.
 
 El DTO debe tener `schemaVersion`. El repositorio traduce errores técnicos; la fachada decide si una operación es reintentable. Una escritura de proyecto y filas debe ser atómica mediante RPC/transacción o estrategia compensatoria documentada; no se acepta éxito parcial silencioso.
 
@@ -404,7 +406,7 @@ El DTO debe tener `schemaVersion`. El repositorio traduce errores técnicos; la 
 
 ```text
 controlador solicita project-persistence.cargarProyecto
-→ repository consulta proyecto + filas bajo company_id/RLS
+→ repository consulta proyecto + filas bajo el contexto de workspace/membresía y RLS (esquema exacto pendiente, ver `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`)
 → persistence valida schemaVersion y DTO completo
 → controlador suspende recálculos/listeners derivados durante hidratación
 → limpia y reconstruye filas con addPiezaRow/adaptador equivalente
@@ -428,7 +430,7 @@ Funciones reutilizables: `addPiezaRow`, `refrescarSelects`, `actualizarControles
 - Confusión entre UUID remoto, `idInterno`, SKU y nombre usado como referencia.
 - Inserción de proyecto exitosa y piezas fallidas, o viceversa.
 - Pérdida del modo local por hacer obligatoria la red.
-- RLS ausente o incorrecta, fuga entre empresas y contexto `company_id` implícito.
+- RLS ausente o incorrecta, fuga entre workspaces y contexto de ownership implícito (RLS futura debe validar membresía activa al workspace propietario, ver `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`).
 - Exponer service-role key; en navegador solo es admisible la clave publicable y con RLS.
 - Migraciones irreversibles o sin datos semilla/pruebas.
 - Latencia que dispare dobles guardados, recálculos o UI engañosa.
@@ -441,7 +443,7 @@ Funciones reutilizables: `addPiezaRow`, `refrescarSelects`, `actualizarControles
 2. No persistir boards ni otros datos derivados iniciales.
 3. No importar ni llamar Supabase desde `main.js`.
 4. Ningún botón debe conocer el cliente; llama a un controlador/fachada.
-5. Toda lectura/escritura pasa por repositorios y conserva `company_id` explícito.
+5. Toda lectura/escritura pasa por repositorios y conserva el contexto de workspace/membresía explícito (nombre exacto de columna/parámetro pendiente de diseño, ver `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`).
 6. Manejar validación, red, autorización, conflicto y parcialidad como errores distintos.
 7. No introducir Auth y persistencia completa en el mismo commit.
 8. No mezclar backend/persistencia con rediseño visual, optimizador o exportadores.
@@ -467,14 +469,14 @@ Una simplificación futura posible es fusionar conceptualmente `pieces-dom-reade
 
 - **¿Está suficientemente modularizado para iniciar Supabase?** Sí, para planificación, inicialización local y primera migración incremental. No para sustitución total del modo local.
 - **¿Qué no debe tocarse antes?** Geometría, costos, render SVG/reporte, coordinación extraída, optimizador, edición de boards y exportaciones.
-- **¿Qué debe documentarse o probarse primero?** DTO versionado mínimo, round-trip DOM → DTO → DOM, paridad de recálculo, modelo multiempresa/RLS y comportamiento offline/error.
+- **¿Qué debe documentarse o probarse primero?** DTO versionado mínimo, round-trip DOM → DTO → DOM, paridad de recálculo, modelo de ownership por workspace/membresía y RLS derivada, y comportamiento offline/error.
 - **¿Dónde vive la infraestructura?** Cliente en `src/scripts/infrastructure/`, repositorio en `src/scripts/repositories/` y caso de uso en `src/scripts/project/`; nunca dentro de `main.js` ni de módulos de dominio.
 
 ## 21. Próximos tres cambios
 
 ### 1. Plan de integración Supabase
 
-- Objetivo: ADR/plan con alcance, DTO, tablas mínimas, multiempresa, RLS, errores, modo local, pruebas y reversión.
+- Objetivo: ADR/plan con alcance, DTO, tablas mínimas, ownership por workspace/membresía, RLS, errores, modo local, pruebas y reversión.
 - Archivos: solo documentación de ingeniería/ADR; sin SDK ni código funcional.
 - Pruebas: revisión trazable contra `05-ARCHITECTURE.md`, `07-DATABASE.md` y este inventario; ejemplos de round-trip y matriz de riesgos.
 - Riesgo: diseñar el esquema futuro completo en vez del mínimo reproducible.
@@ -490,9 +492,9 @@ Una simplificación futura posible es fusionar conceptualmente `pieces-dom-reade
 
 ### 3. Primera migración
 
-- Objetivo: crear el núcleo mínimo acordado para tenancy y borrador reproducible: compañía/contexto mínimo, proyecto y filas de piezas/configuración versionada; RLS desde el inicio.
+- Objetivo: crear el núcleo mínimo para tenancy y borrador reproducible: ownership por workspace/membresía como contexto de propiedad (esquema exacto —tablas, columnas, PK/FK, roles— pendiente de rediseño a partir de `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md` antes de escribir SQL), proyecto y filas de piezas/configuración versionada; RLS desde el inicio.
 - Archivos: una migración SQL, seed/prueba local y documentación del esquema. Sin botones ni consumo desde `main.js`.
-- Pruebas: migración desde cero, rollback/recreación local, restricciones, orden de piezas, aislamiento entre dos compañías y rechazo sin contexto válido.
+- Pruebas: migración desde cero, rollback/recreación local, restricciones, orden de piezas, aislamiento entre proyectos de distintos workspaces y rechazo sin membresía válida.
 - Riesgo: sobredimensionar tablas o dejar RLS para después.
 - Commit sugerido: `feat(database): add initial project persistence schema`.
 
@@ -518,4 +520,4 @@ La arquitectura actual es un monolito frontend modularizado alrededor de un coor
 
 La primera persistencia debe guardar un borrador reproducible: metadatos/versionado/tenant, filas fuente, cantidad y parámetros que cambian el resultado, con referencias o snapshots mínimos de materiales y tapacantos. Boards, geometría, costos, reporte y exportaciones deben recalcularse.
 
-Los módulos estables no deben modificarse durante la entrada a Supabase. El primer cambio técnico no es conectar un botón: es aprobar el plan y el contrato. Después se inicializa Supabase local y solo entonces se crea la primera migración con aislamiento multiempresa y RLS.
+Los módulos estables no deben modificarse durante la entrada a Supabase. El primer cambio técnico no es conectar un botón: es aprobar el plan y el contrato. Después se inicializa Supabase local y solo entonces se crea la primera migración, con aislamiento por workspace/membresía (esquema exacto pendiente de rediseño a partir de `docs/engineering/53-PROYCUT-OWNERSHIP-DECISION.md`) y RLS.
