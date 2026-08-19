@@ -17,3 +17,6 @@ coverage/
 *.tmp
 *.bak
 *~
+
+# Worktrees de Claude Code
+.claude/worktrees/
