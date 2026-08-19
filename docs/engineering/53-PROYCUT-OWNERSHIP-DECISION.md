@@ -60,6 +60,47 @@ Los siguientes nombres se registran únicamente como candidatos de nomenclatura 
 - `workspace_members`
 - `workspace_id`
 
+## Roles mínimos confirmados
+
+Además de la decisión de ownership por workspace, quedan confirmadas las siguientes decisiones sobre membresías y roles:
+
+1. Un usuario puede pertenecer a uno o más workspaces.
+2. Cada proyecto pertenece exactamente a un workspace.
+3. La relación usuario ↔ workspace se modela conceptualmente mediante membresías.
+4. Los roles mínimos iniciales son: `owner`, `admin`, `member`.
+
+### OWNER
+
+- Responsable principal del workspace.
+- Puede administrar configuración sensible y membresías.
+- Debe existir al menos un owner por workspace.
+- No se definen todavía reglas de transferencia, eliminación ni billing.
+
+### ADMIN
+
+- Puede administrar la operación del workspace y sus proyectos.
+- Puede tener capacidades de gestión de miembros según se defina posteriormente.
+- No sustituye automáticamente al owner.
+
+### MEMBER
+
+- Puede trabajar con proyectos del workspace.
+- No administra configuración sensible del workspace por defecto.
+
+**Importante:** estos roles son decisiones conceptuales confirmadas, pero todavía NO se definen:
+
+- permisos CRUD exactos por tabla;
+- permisos SQL;
+- RLS;
+- claims JWT;
+- políticas de invitación;
+- transferencia de ownership;
+- billing;
+- reglas de eliminación del workspace;
+- tablas;
+- columnas;
+- enums SQL.
+
 ## Consecuencias arquitectónicas
 
 Esta decisión no se implementa todavía, pero obliga a revisar los siguientes artefactos existentes antes de avanzar con esquema o migraciones, porque hoy asumen un modelo de propietario individual o lo mezclan de forma inconsistente con una noción de compañía:
@@ -74,12 +115,12 @@ Ningún archivo de estos tres se modifica en este cambio. Se registra aquí como
 
 Las siguientes decisiones técnicas quedan explícitamente **no tomadas** por este documento y deberán resolverse en un cambio posterior, antes de escribir SQL o migraciones:
 
-- **Cardinalidad inicial de membresías**: si un usuario puede pertenecer a varios workspaces desde el primer lanzamiento o si se restringe a uno por simplicidad inicial.
-- **Roles mínimos**: qué roles existen dentro de un workspace (p. ej. owner/admin/member) y cuáles son obligatorios desde la primera migración.
 - **Ownership de catálogos**: si materiales, tapacantos y componentes maestros (cuando dejen de ser snapshots por proyecto) pertenecen al workspace o a otra entidad.
 - **Billing por workspace**: cómo se asocia un plan/suscripción a un workspace, y qué pasa con el billing cuando hay varios miembros.
 - **Comportamiento al eliminar o abandonar un workspace**: qué ocurre con los proyectos, membresías y datos asociados cuando se elimina un workspace o un usuario lo abandona.
 - **RLS definitiva**: la forma exacta de las políticas que validan membresía activa (tabla de membresías, funciones auxiliares, manejo de roles) en vez de comparación directa contra `owner_id`.
+- **Transferencia de ownership**: cómo se transfiere el rol de owner a otro miembro del workspace.
+- **Política de invitaciones y aceptación de membresías**: cómo se invita a un usuario a un workspace y cómo se acepta esa invitación.
 
 ## Referencias
 
