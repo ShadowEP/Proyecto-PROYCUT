@@ -37,6 +37,7 @@
       resultadoPanel.style.display = 'none';
       reportePanel.style.display = 'none';
       state.boards = [];
+      state.ultimoCosto = null;
       state.ultimoReporte = null;
       state.ultimoTotal = 0;
       return false;
@@ -49,6 +50,7 @@
       opcionesReporte.disenoTotal
     );
     reportePanel.style.display = 'block';
+    state.ultimoCosto = datosReporte;
     state.ultimoTotal = datosReporte.total;
     state.ultimoReporte = datosReporte;
     return true;

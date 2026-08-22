@@ -148,7 +148,12 @@
       corteImporte: corteImporte,
       tapacantos: tapacantosRep,
       tapaSubtotal: tapaSubtotal,
-      total: total
+      total: total,
+      costoMateriales: matSubtotal,
+      costoComponentes: componentesSubtotal,
+      costoCorte: corteImporte,
+      costoTapacanto: tapaSubtotal,
+      costoTotal: total
     };
     return {ok:true, datosReporte};
   }

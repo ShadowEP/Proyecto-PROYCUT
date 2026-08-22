@@ -20,7 +20,7 @@
     return `
       <div class="${clase}">
         <span class="label">Total del proyecto</span>
-        <span class="amount">${fmtMoney(datos.total)}</span>
+        <span class="amount">${fmtMoney(datos.costoTotal)}</span>
       </div>`;
   }
   function lineasMaterialHtml(datos){
@@ -42,27 +42,27 @@
         <div class="cost-col">
           <h3>Material</h3>
           ${lineasMaterialHtml(datos)}
-          <div class="cost-line sub"><span>Subtotal material</span><span>${fmtMoney(datos.matSubtotal)}</span></div>
+          <div class="cost-line sub"><span>Subtotal material</span><span>${fmtMoney(datos.costoMateriales)}</span></div>
         </div>
         ${hayComponentes ? `
         <div class="cost-col">
           <h3>Componentes</h3>
           ${lineasComponentesHtml(datos)}
-          <div class="cost-line sub"><span>Subtotal componentes</span><span>${fmtMoney(datos.componentesSubtotal)}</span></div>
+          <div class="cost-line sub"><span>Subtotal componentes</span><span>${fmtMoney(datos.costoComponentes)}</span></div>
         </div>` : ''}
         <div class="cost-col">
           <h3>Corte</h3>
           <div class="cost-line"><span>Tableros usados</span><span>${datos.tableros}</span></div>
           <div class="cost-line"><span>Cortes realizados</span><span>${datos.cortes}</span></div>
           <div class="cost-line"><span>Metros lineales de corte</span><span>${fmt(datos.corteMlPresentacion)} m</span></div>
-          <div class="cost-line"><span>${datos.corteLineaLabel}</span><span>${fmtMoney(datos.corteImporte)}</span></div>
-          <div class="cost-line sub"><span>Subtotal corte</span><span>${fmtMoney(datos.corteImporte)}</span></div>
+          <div class="cost-line"><span>${datos.corteLineaLabel}</span><span>${fmtMoney(datos.costoCorte)}</span></div>
+          <div class="cost-line sub"><span>Subtotal corte</span><span>${fmtMoney(datos.costoCorte)}</span></div>
         </div>
         ${hayTapacanto ? `
         <div class="cost-col">
           <h3>Tapacanto</h3>
           ${lineasTapaHtml(datos)}
-          <div class="cost-line sub"><span>Subtotal tapacanto</span><span>${fmtMoney(datos.tapaSubtotal)}</span></div>
+          <div class="cost-line sub"><span>Subtotal tapacanto</span><span>${fmtMoney(datos.costoTapacanto)}</span></div>
         </div>` : ''}
       </div>
       ${totalBarHtml(datos, disenoTotal)}`;
@@ -75,27 +75,27 @@
         <div class="rl-seccion">
           <div class="rl-titulo">Material</div>
           ${lineasMaterialHtml(datos)}
-          <div class="cost-line sub"><span>Subtotal material</span><span>${fmtMoney(datos.matSubtotal)}</span></div>
+          <div class="cost-line sub"><span>Subtotal material</span><span>${fmtMoney(datos.costoMateriales)}</span></div>
         </div>
         ${hayComponentes ? `
         <div class="rl-seccion">
           <div class="rl-titulo">Componentes</div>
           ${lineasComponentesHtml(datos)}
-          <div class="cost-line sub"><span>Subtotal componentes</span><span>${fmtMoney(datos.componentesSubtotal)}</span></div>
+          <div class="cost-line sub"><span>Subtotal componentes</span><span>${fmtMoney(datos.costoComponentes)}</span></div>
         </div>` : ''}
         <div class="rl-seccion">
           <div class="rl-titulo">Corte</div>
           <div class="cost-line"><span>Tableros usados</span><span>${datos.tableros}</span></div>
           <div class="cost-line"><span>Cortes realizados</span><span>${datos.cortes}</span></div>
           <div class="cost-line"><span>Metros lineales de corte</span><span>${fmt(datos.corteMlPresentacion)} m</span></div>
-          <div class="cost-line"><span>${datos.corteLineaLabel}</span><span>${fmtMoney(datos.corteImporte)}</span></div>
-          <div class="cost-line sub"><span>Subtotal corte</span><span>${fmtMoney(datos.corteImporte)}</span></div>
+          <div class="cost-line"><span>${datos.corteLineaLabel}</span><span>${fmtMoney(datos.costoCorte)}</span></div>
+          <div class="cost-line sub"><span>Subtotal corte</span><span>${fmtMoney(datos.costoCorte)}</span></div>
         </div>
         ${hayTapacanto ? `
         <div class="rl-seccion">
           <div class="rl-titulo">Tapacanto</div>
           ${lineasTapaHtml(datos)}
-          <div class="cost-line sub"><span>Subtotal tapacanto</span><span>${fmtMoney(datos.tapaSubtotal)}</span></div>
+          <div class="cost-line sub"><span>Subtotal tapacanto</span><span>${fmtMoney(datos.costoTapacanto)}</span></div>
         </div>` : ''}
       </div>
       ${totalBarHtml(datos, disenoTotal)}`;
@@ -108,27 +108,27 @@
         <div class="rt-card">
           <h3>Material</h3>
           ${lineasMaterialHtml(datos)}
-          <div class="rt-subtotal"><span>Subtotal</span><span>${fmtMoney(datos.matSubtotal)}</span></div>
+          <div class="rt-subtotal"><span>Subtotal</span><span>${fmtMoney(datos.costoMateriales)}</span></div>
         </div>
         ${hayComponentes ? `
         <div class="rt-card rt-componentes">
           <h3>Componentes</h3>
           ${lineasComponentesHtml(datos)}
-          <div class="rt-subtotal"><span>Subtotal</span><span>${fmtMoney(datos.componentesSubtotal)}</span></div>
+          <div class="rt-subtotal"><span>Subtotal</span><span>${fmtMoney(datos.costoComponentes)}</span></div>
         </div>` : ''}
         <div class="rt-card rt-corte">
           <h3>Corte</h3>
           <div class="cost-line"><span>Tableros usados</span><span>${datos.tableros}</span></div>
           <div class="cost-line"><span>Cortes realizados</span><span>${datos.cortes}</span></div>
           <div class="cost-line"><span>Metros lineales</span><span>${fmt(datos.corteMlPresentacion)} m</span></div>
-          <div class="cost-line"><span>${datos.corteLineaLabel}</span><span>${fmtMoney(datos.corteImporte)}</span></div>
-          <div class="rt-subtotal"><span>Subtotal</span><span>${fmtMoney(datos.corteImporte)}</span></div>
+          <div class="cost-line"><span>${datos.corteLineaLabel}</span><span>${fmtMoney(datos.costoCorte)}</span></div>
+          <div class="rt-subtotal"><span>Subtotal</span><span>${fmtMoney(datos.costoCorte)}</span></div>
         </div>
         ${hayTapacanto ? `
         <div class="rt-card rt-tapa">
           <h3>Tapacanto</h3>
           ${lineasTapaHtml(datos)}
-          <div class="rt-subtotal"><span>Subtotal</span><span>${fmtMoney(datos.tapaSubtotal)}</span></div>
+          <div class="rt-subtotal"><span>Subtotal</span><span>${fmtMoney(datos.costoTapacanto)}</span></div>
         </div>` : ''}
       </div>
       ${totalBarHtml(datos, disenoTotal)}`;
@@ -139,23 +139,23 @@
     datos.materiales.forEach(m => {
       filas += `<tr><td>${m.nombre}</td><td class="num">${m.tableros}</td><td class="num">${fmtMoney(m.importe / (m.tableros||1))}</td><td class="num">${fmtMoney(m.importe)}</td></tr>`;
     });
-    filas += `<tr class="rf-sub"><td colspan="3">Subtotal material</td><td class="num">${fmtMoney(datos.matSubtotal)}</td></tr>`;
+    filas += `<tr class="rf-sub"><td colspan="3">Subtotal material</td><td class="num">${fmtMoney(datos.costoMateriales)}</td></tr>`;
     if(datos.componentes.length > 0){
       filas += `<tr class="rf-seccion"><td colspan="4">Componentes</td></tr>`;
       datos.componentes.forEach(c => {
         filas += `<tr><td>${c.producto || '(sin nombre)'}</td><td class="num">${c.cantidad}</td><td class="num">${fmtMoney(c.precio)}</td><td class="num">${fmtMoney(c.importe)}</td></tr>`;
       });
-      filas += `<tr class="rf-sub"><td colspan="3">Subtotal componentes</td><td class="num">${fmtMoney(datos.componentesSubtotal)}</td></tr>`;
+      filas += `<tr class="rf-sub"><td colspan="3">Subtotal componentes</td><td class="num">${fmtMoney(datos.costoComponentes)}</td></tr>`;
     }
     filas += `<tr class="rf-seccion"><td colspan="4">Corte</td></tr>`;
-    filas += `<tr><td>Cortes realizados (${fmt(datos.corteMlPresentacion)} m, ${datos.tableros} tablero${datos.tableros===1?'':'s'})</td><td class="num">${datos.corteLineaLabel}</td><td class="num"></td><td class="num">${fmtMoney(datos.corteImporte)}</td></tr>`;
-    filas += `<tr class="rf-sub"><td colspan="3">Subtotal corte</td><td class="num">${fmtMoney(datos.corteImporte)}</td></tr>`;
+    filas += `<tr><td>Cortes realizados (${fmt(datos.corteMlPresentacion)} m, ${datos.tableros} tablero${datos.tableros===1?'':'s'})</td><td class="num">${datos.corteLineaLabel}</td><td class="num"></td><td class="num">${fmtMoney(datos.costoCorte)}</td></tr>`;
+    filas += `<tr class="rf-sub"><td colspan="3">Subtotal corte</td><td class="num">${fmtMoney(datos.costoCorte)}</td></tr>`;
     if(datos.tapacantos.length > 0){
       filas += `<tr class="rf-seccion"><td colspan="4">Tapacanto</td></tr>`;
       datos.tapacantos.forEach(t => {
         filas += `<tr><td>${t.tipo}</td><td class="num">${fmt(t.metros)} m</td><td class="num">${fmtMoney(t.importe / (t.metros||1))}</td><td class="num">${fmtMoney(t.importe)}</td></tr>`;
       });
-      filas += `<tr class="rf-sub"><td colspan="3">Subtotal tapacanto</td><td class="num">${fmtMoney(datos.tapaSubtotal)}</td></tr>`;
+      filas += `<tr class="rf-sub"><td colspan="3">Subtotal tapacanto</td><td class="num">${fmtMoney(datos.costoTapacanto)}</td></tr>`;
     }
     return `
       <div class="reporte-factura">

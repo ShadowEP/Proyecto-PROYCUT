@@ -4987,7 +4987,7 @@
     const hayCorteReporte =
       (Number.isFinite(datos.cortes) && datos.cortes > 0) ||
       (Number.isFinite(datos.corteMl) && datos.corteMl > 0) ||
-      (Number.isFinite(datos.corteImporte) && datos.corteImporte > 0);
+      (Number.isFinite(datos.costoCorte) && datos.costoCorte > 0);
 
     // ================= HOJA 2: REPORTE =================
     const wsReporte = wb.addWorksheet('Reporte', {
@@ -5140,7 +5140,7 @@
         materialesReporte.reduce((s,m) => s+m.tableros, 0),
         '#,##0'
       );
-      filaTotalReporte(rr++,'Subtotal general de materiales',datos.matSubtotal,formatoMoneda);
+      filaTotalReporte(rr++,'Subtotal general de materiales',datos.costoMateriales,formatoMoneda);
     }
 
     if(hayComponentesReporte){
@@ -5173,7 +5173,7 @@
         componentesReporte.reduce((s,c) => s+c.cantidadTotal, 0),
         '#,##0'
       );
-      filaTotalReporte(rr++,'Subtotal general de componentes',datos.componentesSubtotal,formatoMoneda);
+      filaTotalReporte(rr++,'Subtotal general de componentes',datos.costoComponentes,formatoMoneda);
     }
 
     if(hayTapacantosReporte){
@@ -5210,7 +5210,7 @@
         tapacantosReporte.reduce((s,t) => s+t.metrosCobrables, 0),
         formatoMetros
       );
-      filaTotalReporte(rr++,'Subtotal general de enchapado o tapacanto',datos.tapaSubtotal,formatoMoneda);
+      filaTotalReporte(rr++,'Subtotal general de enchapado o tapacanto',datos.costoTapacanto,formatoMoneda);
     }
 
     if(haySeccionDetalleReporte) rr++;
@@ -5223,25 +5223,25 @@
       ['Metros lineales de corte',datos.corteMlPresentacion,formatoMetros]
     ];
     if(hayMaterialesReporte){
-      filasReporteGeneral.push(['Subtotal de materiales y tableros',datos.matSubtotal,formatoMoneda]);
+      filasReporteGeneral.push(['Subtotal de materiales y tableros',datos.costoMateriales,formatoMoneda]);
     }
     if(hayComponentesReporte){
-      filasReporteGeneral.push(['Subtotal de componentes',datos.componentesSubtotal,formatoMoneda]);
+      filasReporteGeneral.push(['Subtotal de componentes',datos.costoComponentes,formatoMoneda]);
     }
     if(hayCorteReporte){
-      filasReporteGeneral.push(['Subtotal de corte',datos.corteImporte,formatoMoneda]);
+      filasReporteGeneral.push(['Subtotal de corte',datos.costoCorte,formatoMoneda]);
     }
     if(hayTapacantosReporte){
-      filasReporteGeneral.push(['Subtotal de tapacanto',datos.tapaSubtotal,formatoMoneda]);
+      filasReporteGeneral.push(['Subtotal de tapacanto',datos.costoTapacanto,formatoMoneda]);
     }
-    filasReporteGeneral.push(['Total general',datos.total,formatoMoneda]);
+    filasReporteGeneral.push(['Total general',datos.costoTotal,formatoMoneda]);
     filasReporteGeneral.forEach(linea => filaTotalReporte(rr++,linea[0],linea[1],linea[2]));
 
     wsReporte.mergeCells(rr,1,rr,8);
     wsReporte.getCell(rr,1).value = 'TOTAL DEL PROYECTO';
     wsReporte.getCell(rr,1).font = fBase({bold:true, size:17, color:{argb:colorPrincipal}});
     wsReporte.getCell(rr,1).alignment = {vertical:'middle', horizontal:'left'};
-    wsReporte.getCell(rr,9).value = datos.total;
+    wsReporte.getCell(rr,9).value = datos.costoTotal;
     wsReporte.getCell(rr,9).font = fBase({bold:true, size:17, color:{argb:colorPrincipal}});
     wsReporte.getCell(rr,9).alignment = {vertical:'middle', horizontal:'right'};
     wsReporte.getCell(rr,9).numFmt = formatoMoneda;
@@ -5283,23 +5283,23 @@
       r3++;
     }
     if(hayMaterialesReporte){
-      filaConcepto('Subtotal de materiales y tableros', datos.matSubtotal, formatoMoneda);
+      filaConcepto('Subtotal de materiales y tableros', datos.costoMateriales, formatoMoneda);
     }
     if(hayComponentesReporte){
-      filaConcepto('Subtotal de componentes', datos.componentesSubtotal, formatoMoneda);
+      filaConcepto('Subtotal de componentes', datos.costoComponentes, formatoMoneda);
     }
     filaConcepto('Tableros utilizados', datos.tableros);
     filaConcepto('Cortes realizados', datos.cortes);
     filaConcepto('Metros lineales de corte', datos.corteMlPresentacion, formatoMetros);
     if(hayCorteReporte){
-      filaConcepto('Subtotal de corte', datos.corteImporte, formatoMoneda);
+      filaConcepto('Subtotal de corte', datos.costoCorte, formatoMoneda);
     }
     if(hayTapacantosReporte){
-      filaConcepto('Subtotal de tapacanto', datos.tapaSubtotal, formatoMoneda);
+      filaConcepto('Subtotal de tapacanto', datos.costoTapacanto, formatoMoneda);
     }
     r3++;
     wsResumen.getCell(r3,1).value = 'TOTAL DEL PROYECTO';
-    wsResumen.getCell(r3,2).value = datos.total;
+    wsResumen.getCell(r3,2).value = datos.costoTotal;
     wsResumen.getCell(r3,2).numFmt = formatoMoneda;
     aplicarFilaTotal(wsResumen, r3, 2);
 
