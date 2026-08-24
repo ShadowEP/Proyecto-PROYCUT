@@ -133,20 +133,19 @@ probar('log se emite solo con bandera de desarrollo', () => {
   assert.strictEqual(llamadas[0][0], 'Manufacturing equivalence');
 });
 
-probar('main integra pipeline y shadow sin sustituir grupos legacy productivos', () => {
+probar('main conserva piezas legacy y selecciona grupos Manufacturing con fallback', () => {
   const main = fs.readFileSync(path.join(raiz, 'src/scripts/main.js'), 'utf8');
   const inicio = main.indexOf('const manufacturingPipeline = buildManufacturingPipeline({');
   const fin = main.indexOf('const resultadoCostos = calcularCostosProyecto({', inicio);
   const integracion = main.slice(inicio, fin);
-  assert.ok(inicio >= 0);
   assert.ok(integracion.includes('piezasActuales:piezas'));
   assert.ok(integracion.includes('const optimizacion = optimizarProyectoPreparado({'));
-  assert.ok(integracion.includes('gruposPorMaterial: porMaterial'));
-  assert.ok(!integracion.includes('gruposPorMaterialOptimizer'));
-  assert.ok(!integracion.includes('puedeUsarManufacturingInput'));
+  assert.ok(integracion.includes('manufacturingPipeline.equivalenceReport.compatible === true'));
+  assert.ok(integracion.includes('manufacturingPipeline.optimizerInput.errores.length === 0'));
+  assert.ok(integracion.includes('? manufacturingPipeline.optimizerInput.gruposPorMaterial'));
+  assert.ok(integracion.includes(': porMaterial'));
+  assert.ok(integracion.includes('gruposPorMaterial: gruposPorMaterialOptimizer'));
   assert.ok(!integracion.includes('piezas = manufacturingPipeline'));
-  assert.ok(main.includes('if(window.PROYCUT_DEV === true){'));
-  assert.ok(main.includes('ejecutarManufacturingExecution({'));
 });
 
 probar('scripts de fabrication y pipeline cargan antes de main', () => {

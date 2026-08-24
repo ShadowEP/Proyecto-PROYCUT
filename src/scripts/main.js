@@ -4608,8 +4608,16 @@
     });
     ultimoManufacturingModel = manufacturingPipeline.manufacturingModel;
 
+    const puedeUsarManufacturingInput =
+      libre === false &&
+      manufacturingPipeline.equivalenceReport.compatible === true &&
+      manufacturingPipeline.optimizerInput.errores.length === 0;
+    const gruposPorMaterialOptimizer = puedeUsarManufacturingInput
+      ? manufacturingPipeline.optimizerInput.gruposPorMaterial
+      : porMaterial;
+
     const optimizacion = optimizarProyectoPreparado({
-      gruposPorMaterial: porMaterial,
+      gruposPorMaterial: gruposPorMaterialOptimizer,
       parametrosCorteProyecto: parametrosCorte,
       opcionesProyecto: {libre, nivelOptimizacion},
       dependencias: {
