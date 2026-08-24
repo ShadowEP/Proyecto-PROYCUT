@@ -11,6 +11,8 @@ vm.runInContext(codigo, contexto, {filename:archivo});
 
 const {
   CAMPOS_MANUFACTURING_EXECUTION_REPORT,
+  MOTIVOS_DECISION_MANUFACTURING,
+  crearManufacturingDecisionReport,
   crearManufacturingExecutionReport
 } = contexto.window.ProyCutManufacturingExecutionReporter;
 
@@ -37,6 +39,55 @@ function crearEntradas(){
   const equivalenceReport = {compatible:true, diferencias:[]};
   return {manufacturingExecutionSnapshot, equivalenceReport};
 }
+
+function crearEntradaDecision(cambios){
+  return Object.assign({
+    usaManufacturingInput:true,
+    libre:false,
+    equivalenceReport:{compatible:true, diferencias:[]},
+    optimizerInput:{piezas:[], gruposPorMaterial:{}, errores:[]}
+  }, cambios);
+}
+
+probar('proyecto libre reporta seleccion legacy sin alterar la entrada', () => {
+  const entrada = crearEntradaDecision({usaManufacturingInput:false, libre:true});
+  const antes = JSON.stringify(entrada);
+  const reporte = crearManufacturingDecisionReport(entrada);
+  assert.strictEqual(reporte.modo, 'legacy');
+  assert.ok(reporte.motivos.includes(MOTIVOS_DECISION_MANUFACTURING.PROYECTO_LIBRE));
+  assert.strictEqual(JSON.stringify(entrada), antes);
+});
+
+probar('proyecto compatible reporta seleccion manufacturing', () => {
+  const reporte = crearManufacturingDecisionReport(crearEntradaDecision());
+  assert.deepStrictEqual(plano(reporte), {
+    modo:'manufacturing',
+    motivos:['proyecto no libre', 'compatible', 'sin errores']
+  });
+});
+
+probar('equivalencia incompatible reporta fallback legacy', () => {
+  const reporte = crearManufacturingDecisionReport(crearEntradaDecision({
+    usaManufacturingInput:false,
+    equivalenceReport:{compatible:false, diferencias:[{campo:'material'}]}
+  }));
+  assert.strictEqual(reporte.modo, 'legacy');
+  assert.ok(reporte.motivos.includes(
+    MOTIVOS_DECISION_MANUFACTURING.EQUIVALENCIA_INCOMPATIBLE
+  ));
+});
+
+probar('errores de ManufacturingInput reportan fallback legacy', () => {
+  const reporte = crearManufacturingDecisionReport(crearEntradaDecision({
+    usaManufacturingInput:false,
+    equivalenceReport:{compatible:false, diferencias:[]},
+    optimizerInput:{piezas:[], gruposPorMaterial:{}, errores:['material incompleto']}
+  }));
+  assert.strictEqual(reporte.modo, 'legacy');
+  assert.ok(reporte.motivos.includes(
+    MOTIVOS_DECISION_MANUFACTURING.ERRORES_MANUFACTURING_INPUT
+  ));
+});
 
 probar('devuelve exactamente el contrato observacional definido', () => {
   const reporte = crearManufacturingExecutionReport(crearEntradas());
@@ -86,4 +137,20 @@ probar('main usa el reporter solamente dentro de PROYCUT_DEV', () => {
   assert.ok(bloqueShadow.includes('manufacturingExecutionSnapshot,'));
   assert.ok(bloqueShadow.includes('equivalenceReport:manufacturingPipeline.equivalenceReport'));
   assert.ok(!bloqueShadow.includes('pricing:true'));
+});
+
+probar('main conserva el gate productivo y reporta la decision despues de evaluarlo', () => {
+  const main = fs.readFileSync(path.join(raiz, 'src/scripts/main.js'), 'utf8');
+  const inicio = main.indexOf('const puedeUsarManufacturingInput =');
+  const fin = main.indexOf('if(window.PROYCUT_DEV === true){', inicio);
+  const selector = main.slice(inicio, fin);
+  assert.ok(selector.includes(
+    'libre === false &&\n' +
+    '      manufacturingPipeline.equivalenceReport.compatible === true &&\n' +
+    '      manufacturingPipeline.optimizerInput.errores.length === 0;'
+  ));
+  assert.ok(selector.indexOf('const resultadoCostos = calcularCostosProyecto({') <
+    selector.indexOf('crearManufacturingDecisionReport({'));
+  assert.ok(selector.includes('usaManufacturingInput:puedeUsarManufacturingInput'));
+  assert.ok(!codigo.includes('optimizarProyectoPreparado'));
 });

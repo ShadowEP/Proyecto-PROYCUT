@@ -134,6 +134,7 @@
   } = window.ProyCutManufacturingExecutionFacade;
 
   const {
+    crearManufacturingDecisionReport,
     crearManufacturingExecutionReport
   } = window.ProyCutManufacturingExecutionReporter;
 
@@ -4532,6 +4533,7 @@
   // ---------- Optimizar (recalculo completo: diagrama + costos) ----------
   let debounceTimer = null;
   let ultimoManufacturingModel = null;
+  let ultimoReporteDecisionManufacturing = null;
   let ultimoReporteMadurezFabricacion = null;
   function recalcularDebounced(){
     clearTimeout(debounceTimer);
@@ -4661,7 +4663,14 @@
       precioCorteMetro,
       redondearTapacanto: document.getElementById('redondearTapacanto').checked
     });
+    ultimoReporteDecisionManufacturing = crearManufacturingDecisionReport({
+      usaManufacturingInput:puedeUsarManufacturingInput,
+      libre,
+      equivalenceReport:manufacturingPipeline.equivalenceReport,
+      optimizerInput:manufacturingPipeline.optimizerInput
+    });
     if(window.PROYCUT_DEV === true){
+      console.info('Manufacturing decision', ultimoReporteDecisionManufacturing);
       const {
         optimizationResult:resultadoFabrication,
         costResult:resultadoCostosFabrication,
