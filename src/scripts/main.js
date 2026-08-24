@@ -138,6 +138,10 @@
     crearManufacturingExecutionReport
   } = window.ProyCutManufacturingExecutionReporter;
 
+  const {
+    crearManufacturingMetrics
+  } = window.ProyCutManufacturingMetrics;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -4534,6 +4538,7 @@
   let debounceTimer = null;
   let ultimoManufacturingModel = null;
   let ultimoReporteDecisionManufacturing = null;
+  const ultimoManufacturingMetrics = crearManufacturingMetrics();
   let ultimoReporteMadurezFabricacion = null;
   function recalcularDebounced(){
     clearTimeout(debounceTimer);
@@ -4669,8 +4674,10 @@
       equivalenceReport:manufacturingPipeline.equivalenceReport,
       optimizerInput:manufacturingPipeline.optimizerInput
     });
+    ultimoManufacturingMetrics.registrarDecision(ultimoReporteDecisionManufacturing);
     if(window.PROYCUT_DEV === true){
       console.info('Manufacturing decision', ultimoReporteDecisionManufacturing);
+      console.info('Manufacturing metrics', ultimoManufacturingMetrics.obtenerSnapshot());
       const {
         optimizationResult:resultadoFabrication,
         costResult:resultadoCostosFabrication,
