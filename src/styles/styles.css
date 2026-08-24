@@ -141,30 +141,33 @@
   #tablaComponentes th:nth-child(1), #tablaComponentes td:nth-child(1),
   #tablaComponentesProyecto th:nth-child(1), #tablaComponentesProyecto td:nth-child(1){width:12%;}
   #tablaTapacantos th:nth-child(2), #tablaTapacantos td:nth-child(2),
-  #tablaComponentes th:nth-child(2), #tablaComponentes td:nth-child(2),
+  #tablaComponentes th:nth-child(2), #tablaComponentes td:nth-child(2){width:38%;}
   #tablaComponentesProyecto th:nth-child(2), #tablaComponentesProyecto td:nth-child(2){width:48%;}
   #tablaTapacantos th:nth-child(3), #tablaTapacantos td:nth-child(3),
-  #tablaComponentes th:nth-child(3), #tablaComponentes td:nth-child(3){width:22%;}
+  #tablaComponentes th:nth-child(3), #tablaComponentes td:nth-child(3){width:18%;}
   #tablaTapacantos th:nth-child(4), #tablaTapacantos td:nth-child(4),
   #tablaComponentes th:nth-child(4), #tablaComponentes td:nth-child(4){width:18%;}
-  /* "Placas y tableros" tiene 7 columnas (SKU, Material, Largo, Ancho, Espesor, Precio, Quitar),
-     asi que necesita sus propios porcentajes en vez de compartir los de las tablas de 4 columnas. */
-  #tablaMateriales th:nth-child(1), #tablaMateriales td:nth-child(1){width:9%;}
-  #tablaMateriales th:nth-child(2), #tablaMateriales td:nth-child(2){width:24%;}
-  #tablaMateriales th:nth-child(3), #tablaMateriales td:nth-child(3){width:11%;}
-  #tablaMateriales th:nth-child(4), #tablaMateriales td:nth-child(4){width:11%;}
-  #tablaMateriales th:nth-child(5), #tablaMateriales td:nth-child(5){width:12%;}
-  #tablaMateriales th:nth-child(6), #tablaMateriales td:nth-child(6){width:17%;}
-  #tablaMateriales th:nth-child(7), #tablaMateriales td:nth-child(7){width:16%;}
+  #tablaTapacantos th:nth-child(5), #tablaTapacantos td:nth-child(5),
+  #tablaComponentes th:nth-child(5), #tablaComponentes td:nth-child(5){width:14%;}
+  /* "Placas y tableros" tiene 8 columnas, incluida la accion Quitar. */
+  #tablaMateriales th:nth-child(1), #tablaMateriales td:nth-child(1){width:8%;}
+  #tablaMateriales th:nth-child(2), #tablaMateriales td:nth-child(2){width:22%;}
+  #tablaMateriales th:nth-child(3), #tablaMateriales td:nth-child(3){width:10%;}
+  #tablaMateriales th:nth-child(4), #tablaMateriales td:nth-child(4){width:10%;}
+  #tablaMateriales th:nth-child(5), #tablaMateriales td:nth-child(5){width:10%;}
+  #tablaMateriales th:nth-child(6), #tablaMateriales td:nth-child(6){width:14%;}
+  #tablaMateriales th:nth-child(7), #tablaMateriales td:nth-child(7){width:14%;}
+  #tablaMateriales th:nth-child(8), #tablaMateriales td:nth-child(8){width:12%;}
   /* si se oculta la columna Espesor (checkbox en "Ajuste de la interfaz"), se le quita el espacio
      a esa columna y se reparte entre las demas para que la tabla siga ocupando el 100% del ancho. */
   #tablaMateriales.oculta-espesor th:nth-child(5), #tablaMateriales.oculta-espesor td:nth-child(5){display:none;}
-  #tablaMateriales.oculta-espesor th:nth-child(1), #tablaMateriales.oculta-espesor td:nth-child(1){width:10%;}
-  #tablaMateriales.oculta-espesor th:nth-child(2), #tablaMateriales.oculta-espesor td:nth-child(2){width:27%;}
-  #tablaMateriales.oculta-espesor th:nth-child(3), #tablaMateriales.oculta-espesor td:nth-child(3){width:13%;}
-  #tablaMateriales.oculta-espesor th:nth-child(4), #tablaMateriales.oculta-espesor td:nth-child(4){width:13%;}
-  #tablaMateriales.oculta-espesor th:nth-child(6), #tablaMateriales.oculta-espesor td:nth-child(6){width:20%;}
-  #tablaMateriales.oculta-espesor th:nth-child(7), #tablaMateriales.oculta-espesor td:nth-child(7){width:17%;}
+  #tablaMateriales.oculta-espesor th:nth-child(1), #tablaMateriales.oculta-espesor td:nth-child(1){width:9%;}
+  #tablaMateriales.oculta-espesor th:nth-child(2), #tablaMateriales.oculta-espesor td:nth-child(2){width:25%;}
+  #tablaMateriales.oculta-espesor th:nth-child(3), #tablaMateriales.oculta-espesor td:nth-child(3){width:12%;}
+  #tablaMateriales.oculta-espesor th:nth-child(4), #tablaMateriales.oculta-espesor td:nth-child(4){width:12%;}
+  #tablaMateriales.oculta-espesor th:nth-child(6), #tablaMateriales.oculta-espesor td:nth-child(6){width:16%;}
+  #tablaMateriales.oculta-espesor th:nth-child(7), #tablaMateriales.oculta-espesor td:nth-child(7){width:14%;}
+  #tablaMateriales.oculta-espesor th:nth-child(8), #tablaMateriales.oculta-espesor td:nth-child(8){width:12%;}
   #tablaComponentesProyecto th:nth-child(2), #tablaComponentesProyecto td:nth-child(2){width:36%;}
   #tablaComponentesProyecto th:nth-child(3), #tablaComponentesProyecto td:nth-child(3){width:12%;}
   #tablaComponentesProyecto th:nth-child(4), #tablaComponentesProyecto td:nth-child(4){width:14%;}

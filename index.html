@@ -18,7 +18,6 @@
       </button>
       <div class="header-dropdown" id="materialesDropdown">
         <button class="dd-item" id="toggleTableros">Placas y tableros</button>
-        <button class="dd-item" id="toggleCubrecanto">Cubre canto</button>
         <button class="dd-item" id="toggleComponentes">Componentes</button>
       </div>
     </div>
@@ -30,6 +29,15 @@
       <div class="header-dropdown" id="preferenciasDropdown">
         <button class="dd-item" id="toggleEstilo" title="Personalizar apariencia (colores, letra y tamaños de la interfaz)">Ajuste de la interfaz</button>
         <button class="dd-item" id="toggleConfig" title="Grosor de corte, precio por corte y tablero">Ajustes de parámetros de corte</button>
+      </div>
+    </div>
+    <div class="nav-item">
+      <button class="header-link" id="toggleServiciosMenu" aria-expanded="false" aria-controls="serviciosDropdown">
+        Servicios
+      </button>
+      <div class="header-dropdown" id="serviciosDropdown">
+        <button class="dd-item" id="toggleServicioCorte">Servicio de corte</button>
+        <button class="dd-item" id="toggleCubrecanto">Enchapado / Tapacanto</button>
       </div>
     </div>
     <div class="nav-item">
@@ -74,7 +82,7 @@
     <h2>Placas y tableros</h2>
     <div class="panel-scroll">
       <table class="mini-table" id="tablaMateriales">
-        <thead><tr><th>SKU</th><th>Material</th><th title="Medida del tablero/placa de este material, tal como viene de fabrica (se usa para el diagrama y el acomodo de piezas de este material)">Largo (mm)</th><th title="Medida del tablero/placa de este material, tal como viene de fabrica (se usa para el diagrama y el acomodo de piezas de este material)">Ancho (mm)</th><th title="Espesor o grosor del tablero, solo como referencia (no afecta el calculo ni el diagrama)">Espesor (mm)</th><th>Precio / tablero</th><th></th></tr></thead>
+        <thead><tr><th>SKU</th><th>Material</th><th title="Medida del tablero/placa de este material, tal como viene de fabrica (se usa para el diagrama y el acomodo de piezas de este material)">Largo (mm)</th><th title="Medida del tablero/placa de este material, tal como viene de fabrica (se usa para el diagrama y el acomodo de piezas de este material)">Ancho (mm)</th><th title="Espesor o grosor del tablero, solo como referencia (no afecta el calculo ni el diagrama)">Espesor (mm)</th><th>Costo tablero</th><th>Precio venta tablero</th><th>Acción</th></tr></thead>
         <tbody></tbody>
       </table>
       <button class="btn secondary" id="addMaterial" style="font-size:12px;padding:6px 10px;">+ Agregar material</button>
@@ -87,7 +95,7 @@
     <h2>Cubre canto</h2>
     <div class="panel-scroll">
       <table class="mini-table" id="tablaTapacantos">
-        <thead><tr><th>SKU</th><th>Tipo</th><th>Precio / metro</th><th></th></tr></thead>
+        <thead><tr><th>SKU</th><th>Tipo</th><th>Costo metro</th><th>Precio metro venta</th><th>Acción</th></tr></thead>
         <tbody></tbody>
       </table>
       <button class="btn secondary" id="addTapacanto" style="font-size:12px;padding:6px 10px;">+ Agregar tipo</button>
@@ -100,7 +108,7 @@
     <h2>Componentes</h2>
     <div class="panel-scroll">
       <table class="mini-table" id="tablaComponentes">
-        <thead><tr><th>SKU</th><th>Producto</th><th>Precio</th><th></th></tr></thead>
+        <thead><tr><th>SKU</th><th>Producto</th><th>Costo unidad</th><th>Precio venta unidad</th><th>Acción</th></tr></thead>
         <tbody></tbody>
       </table>
       <button class="btn secondary" id="addComponente" style="font-size:12px;padding:6px 10px;">+ Agregar componente</button>
@@ -455,7 +463,7 @@
       </div>
     </div>
 
-    <div class="config-sub">Precio del corte</div>
+    <div class="config-sub">Costo y precio de venta del corte</div>
     <div class="config-row">
       <div class="config-field">
         <label>Cobrar el corte por</label>
@@ -465,17 +473,6 @@
         </div>
       </div>
     </div>
-    <div class="config-row">
-      <div class="config-field">
-        <label>Precio por corte ($/corte)</label>
-        <input type="number" id="precioCorte" value="5" min="0" step="0.5">
-      </div>
-      <div class="config-field">
-        <label>Precio por metro lineal de corte ($/m)</label>
-        <input type="number" id="precioCorteMetro" value="20" min="0" step="0.5">
-      </div>
-    </div>
-
     <div class="config-sub">Opciones de corte y tapacanto</div>
     <div class="config-row">
       <div class="config-field" style="flex-direction:row; align-items:center; gap:8px;">
@@ -494,6 +491,35 @@
 
     <div class="btn-row panel-guardar-row" style="justify-content:flex-end;">
       <button class="btn" id="guardarConfigBtn">Guardar</button>
+    </div>
+  </div>
+  <div class="panel config-panel panel-con-guardar" id="serviciosPanel">
+    <h2>Servicios</h2>
+    <div class="panel-scroll">
+      <div class="config-sub">Servicio de corte</div>
+      <div class="config-row">
+        <div class="config-field">
+          <label>Costo por corte ($/corte)</label>
+          <input type="number" id="precioCorte" value="5" min="0" step="0.5">
+        </div>
+        <div class="config-field">
+          <label>Costo por metro lineal de corte ($/m)</label>
+          <input type="number" id="precioCorteMetro" value="20" min="0" step="0.5">
+        </div>
+      </div>
+      <div class="config-row">
+        <div class="config-field">
+          <label>Precio venta por corte ($/corte)</label>
+          <input type="number" id="precioVentaCorte" min="0" step="0.5" placeholder="Captura el precio de venta">
+        </div>
+        <div class="config-field">
+          <label>Precio venta por metro lineal ($/m)</label>
+          <input type="number" id="precioVentaCorteMetro" min="0" step="0.5" placeholder="Captura el precio de venta">
+        </div>
+      </div>
+    </div>
+    <div class="btn-row panel-guardar-row" style="justify-content:flex-end;">
+      <button class="btn" id="guardarServiciosBtn">Guardar</button>
     </div>
   </div>
 </div>
@@ -643,8 +669,19 @@
       </div>
 
       <div class="panel" id="reportePanel" style="display:none;">
-        <h2>Precio del proyecto</h2>
-        <div id="reporteContenido"></div>
+        <h2>Resumen económico</h2>
+        <div class="tabs" role="tablist" aria-label="Resumen económico">
+          <button type="button" class="tab-btn active" id="mostrarCostosProyecto" role="tab" aria-selected="true" aria-controls="costosProyectoPanel">COSTOS</button>
+          <button type="button" class="tab-btn" id="mostrarPreciosProyecto" role="tab" aria-selected="false" aria-controls="preciosProyectoPanel">PRECIOS</button>
+        </div>
+        <div id="costosProyectoPanel" role="tabpanel" aria-labelledby="mostrarCostosProyecto">
+          <div id="resumenCostosContenido"></div>
+          <div id="reporteContenido" hidden></div>
+        </div>
+        <div id="preciosProyectoPanel" role="tabpanel" aria-labelledby="mostrarPreciosProyecto" hidden>
+          <div id="resumenPreciosContenido"></div>
+          <p class="sub" id="estadoPrecioCatalogo" style="margin:8px 0 14px;" aria-live="polite">Completa los precios comerciales para ver el precio de venta.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -723,11 +760,14 @@
 <script src="./src/scripts/svg/board-renderer.js"></script>
 <script src="./src/scripts/excel/excel-diagrams.js"></script>
 <script src="./src/scripts/costing/calculate-costs.js"></script>
+<script src="./src/scripts/pricing/calculate-price.js"></script>
 <script src="./src/scripts/pieces/pieces-dom-reader.js"></script>
 <script src="./src/scripts/pieces/project-model.js"></script>
 <script src="./src/scripts/project/prepare-project.js"></script>
 <script src="./src/scripts/project/optimize-project.js"></script>
 <script src="./src/scripts/project/apply-project-results.js"></script>
+<script src="./src/scripts/project/pricing-application-adapter.js"></script>
+<script src="./src/scripts/project/calculate-project-price.js"></script>
 <script src="./src/scripts/reports/report-renderer.js"></script>
 <script src="./src/scripts/main.js"></script>
 </body>

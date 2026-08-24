@@ -130,9 +130,9 @@
   let pieceCounter = 0;
 
   const state = {
-    materiales: [{sku:'', nombre:'Melamina de 15mm', precio:750, largo:2440, ancho:1220, espesor:15}],
-    tapacantos: [{sku:'', nombre:'PVC 0.4mm', precio:10.5}],
-    componentes: [{sku:'', producto:'', precio:0}],
+    materiales: [{sku:'', nombre:'Melamina de 15mm', precio:750, precioVenta:1200, largo:2440, ancho:1220, espesor:15}],
+    tapacantos: [{sku:'', nombre:'PVC 0.4mm', precio:10.5, precioVenta:null}],
+    componentes: [{sku:'', producto:'', precio:0, precioVenta:null}],
     componentesProyecto: [], // componentes del catalogo ya agregados a este proyecto en especifico, con su cantidad
     boards: [], // resultado tras optimizar, uno por tablero (con .material)
     activeTab: 0,
@@ -437,14 +437,15 @@
       tr.appendChild(crearCeldaConInput('number', 'mat-ancho', m.ancho || medidaDefault.ancho, { min: 1, step: 1, ancho: '90px' }));
       tr.appendChild(crearCeldaConInput('number', 'mat-espesor', m.espesor || 15, { min: 0, step: 1, ancho: '80px' }));
       tr.appendChild(crearCeldaConInput('number', 'mat-precio', m.precio, { min: 0, step: 1 }));
+      tr.appendChild(crearCeldaConInput('number', 'mat-precio-venta', m.precioVenta, { min: 0, step: 1 }));
       const tdAcciones = document.createElement('td');
-      if(state.materiales.length > 1){
-        const botonQuitar = document.createElement('button');
-        botonQuitar.className = 'btn danger mat-del';
-        botonQuitar.dataset.i = i;
-        botonQuitar.textContent = 'Quitar';
-        tdAcciones.appendChild(botonQuitar);
-      }
+      const botonQuitar = document.createElement('button');
+      botonQuitar.className = 'btn danger btn-remove mat-del';
+      botonQuitar.dataset.i = i;
+      botonQuitar.textContent = 'Quitar';
+      botonQuitar.disabled = state.materiales.length === 1;
+      botonQuitar.title = botonQuitar.disabled ? 'Debe existir al menos un material.' : 'Quitar material';
+      tdAcciones.appendChild(botonQuitar);
       tr.appendChild(tdAcciones);
       tbody.appendChild(tr);
     });
@@ -464,7 +465,12 @@
     tbody.querySelectorAll('.mat-precio').forEach(inp => inp.addEventListener('input', e => {
       state.materiales[e.target.dataset.i].precio = parseFloat(e.target.value)||0; recalcularDebounced();
     }));
+    tbody.querySelectorAll('.mat-precio-venta').forEach(inp => inp.addEventListener('input', e => {
+      state.materiales[e.target.dataset.i].precioVenta = e.target.value === '' ? null : Number(e.target.value);
+      actualizarPrecioCatalogoVisible();
+    }));
     tbody.querySelectorAll('.mat-del').forEach(btn => btn.addEventListener('click', e => {
+      if(state.materiales.length === 1) return;
       state.materiales.splice(e.target.dataset.i,1); renderMateriales(); refrescarSelects(); recalcularDebounced();
     }));
   }
@@ -489,14 +495,15 @@
       tr.appendChild(crearCeldaConInput('text', 'tapa-sku', t.sku || ''));
       tr.appendChild(crearCeldaConInput('text', 'tapa-nombre', t.nombre));
       tr.appendChild(crearCeldaConInput('number', 'tapa-precio', t.precio, { min: 0, step: 0.5 }));
+      tr.appendChild(crearCeldaConInput('number', 'tapa-precio-venta', t.precioVenta, { min: 0, step: 0.5 }));
       const tdAcciones = document.createElement('td');
-      if(state.tapacantos.length > 1){
-        const botonQuitar = document.createElement('button');
-        botonQuitar.className = 'btn danger tapa-del';
-        botonQuitar.dataset.i = i;
-        botonQuitar.textContent = 'Quitar';
-        tdAcciones.appendChild(botonQuitar);
-      }
+      const botonQuitar = document.createElement('button');
+      botonQuitar.className = 'btn danger btn-remove tapa-del';
+      botonQuitar.dataset.i = i;
+      botonQuitar.textContent = 'Quitar';
+      botonQuitar.disabled = state.tapacantos.length === 1;
+      botonQuitar.title = botonQuitar.disabled ? 'Debe existir al menos un tapacanto.' : 'Quitar tapacanto';
+      tdAcciones.appendChild(botonQuitar);
       tr.appendChild(tdAcciones);
       tbody.appendChild(tr);
     });
@@ -507,7 +514,12 @@
     tbody.querySelectorAll('.tapa-precio').forEach(inp => inp.addEventListener('input', e => {
       state.tapacantos[e.target.dataset.i].precio = parseFloat(e.target.value)||0; recalcularDebounced();
     }));
+    tbody.querySelectorAll('.tapa-precio-venta').forEach(inp => inp.addEventListener('input', e => {
+      state.tapacantos[e.target.dataset.i].precioVenta = e.target.value === '' ? null : Number(e.target.value);
+      actualizarPrecioCatalogoVisible();
+    }));
     tbody.querySelectorAll('.tapa-del').forEach(btn => btn.addEventListener('click', e => {
+      if(state.tapacantos.length === 1) return;
       state.tapacantos.splice(e.target.dataset.i,1); renderTapacantos(); refrescarSelects(); recalcularDebounced();
     }));
   }
@@ -532,14 +544,15 @@
       tr.appendChild(crearCeldaConInput('text', 'comp-sku', c.sku || ''));
       tr.appendChild(crearCeldaConInput('text', 'comp-producto', c.producto || ''));
       tr.appendChild(crearCeldaConInput('number', 'comp-precio', c.precio, { min: 0, step: 0.5 }));
+      tr.appendChild(crearCeldaConInput('number', 'comp-precio-venta', c.precioVenta, { min: 0, step: 0.5 }));
       const tdAcciones = document.createElement('td');
-      if(state.componentes.length > 1){
-        const botonQuitar = document.createElement('button');
-        botonQuitar.className = 'btn danger comp-del';
-        botonQuitar.dataset.i = i;
-        botonQuitar.textContent = 'Quitar';
-        tdAcciones.appendChild(botonQuitar);
-      }
+      const botonQuitar = document.createElement('button');
+      botonQuitar.className = 'btn danger btn-remove comp-del';
+      botonQuitar.dataset.i = i;
+      botonQuitar.textContent = 'Quitar';
+      botonQuitar.disabled = state.componentes.length === 1;
+      botonQuitar.title = botonQuitar.disabled ? 'Debe existir al menos un componente.' : 'Quitar componente';
+      tdAcciones.appendChild(botonQuitar);
       tr.appendChild(tdAcciones);
       tbody.appendChild(tr);
     });
@@ -550,8 +563,13 @@
     tbody.querySelectorAll('.comp-precio').forEach(inp => inp.addEventListener('input', e => {
       state.componentes[e.target.dataset.i].precio = parseFloat(e.target.value)||0;
     }));
+    tbody.querySelectorAll('.comp-precio-venta').forEach(inp => inp.addEventListener('input', e => {
+      state.componentes[e.target.dataset.i].precioVenta = e.target.value === '' ? null : Number(e.target.value);
+      actualizarPrecioCatalogoVisible();
+    }));
     tbody.querySelectorAll('.comp-del').forEach(btn => btn.addEventListener('click', e => {
-      state.componentes.splice(e.target.dataset.i,1); renderComponentes();
+      if(state.componentes.length === 1) return;
+      state.componentes.splice(e.target.dataset.i,1); renderComponentes(); recalcularDebounced();
     }));
   }
 
@@ -709,24 +727,24 @@
 
   document.getElementById('addMaterial').addEventListener('click', () => {
     const medida = obtenerMedidaTableroDefault();
-    state.materiales.push(crearRegistroCatalogo('material', {sku:'', nombre:'Nuevo material', precio:700, largo:medida.largo, ancho:medida.ancho, espesor:15}));
+    state.materiales.push(crearRegistroCatalogo('material', {sku:'', nombre:'Nuevo material', precio:700, precioVenta:null, largo:medida.largo, ancho:medida.ancho, espesor:15}));
     renderMateriales(); refrescarSelects(); recalcularDebounced();
     enfocarUltimoInput('mat-sku');
   });
   document.getElementById('addTapacanto').addEventListener('click', () => {
-    state.tapacantos.push(crearRegistroCatalogo('tapacanto', {sku:'', nombre:'Nuevo tipo', precio:10}));
+    state.tapacantos.push(crearRegistroCatalogo('tapacanto', {sku:'', nombre:'Nuevo tipo', precio:10, precioVenta:null}));
     renderTapacantos(); refrescarSelects(); recalcularDebounced();
     enfocarUltimoInput('tapa-sku');
   });
   document.getElementById('addComponente').addEventListener('click', () => {
-    state.componentes.push(crearRegistroCatalogo('componente', {sku:'', producto:'', precio:0}));
+    state.componentes.push(crearRegistroCatalogo('componente', {sku:'', producto:'', precio:0, precioVenta:null}));
     renderComponentes();
     enfocarUltimoInput('comp-sku');
   });
 
   // menu del encabezado: "Materiales" agrupa 3 sub-pestanas (Placas y tableros, Cubre canto,
-  // Componentes) y "Preferencias" agrupa 2 (Ajuste de la interfaz, Ajustes de parametros de
-  // corte); cada uno despliega su propio listado de texto justo debajo. Solo un panel puede
+  // Componentes), "Preferencias" agrupa 2 (Ajuste de la interfaz, Ajustes de parametros de
+  // corte) y "Servicios" agrupa corte y enchapado/tapacanto. Solo un panel puede
   // estar abierto a la vez, y mientras alguno lo esta se oculta el resto de la interfaz (piezas,
   // diagrama, precio) para dejar la pantalla enfocada en el panel. El logo de la empresa no tiene
   // panel propio: es el que regresa a la pantalla principal (piezas + diagrama + precio).
@@ -736,10 +754,14 @@
   ];
   const subMaterial = [
     ['toggleTableros', 'tablerosPanel'],
-    ['toggleCubrecanto', 'cubrecantoPanel'],
     ['toggleComponentes', 'componentesPanel']
   ];
-  const todosLosPaneles = gruposPrincipales.map(par => par[1]).concat(subMaterial.map(par => par[1]));
+  const subServicios = [
+    ['toggleServicioCorte', 'serviciosPanel'],
+    ['toggleCubrecanto', 'cubrecantoPanel']
+  ];
+  const todosLosPaneles = gruposPrincipales.map(par => par[1])
+    .concat(subMaterial.map(par => par[1]), subServicios.map(par => par[1]));
 
   function actualizarVisibilidadInterfaz(){
     const algunoAbierto = todosLosPaneles.some(id => document.getElementById(id).classList.contains('open'));
@@ -755,10 +777,16 @@
       document.getElementById(par[1]).classList.remove('open');
       document.getElementById(par[0]).classList.remove('active');
     });
+    subServicios.forEach(par => {
+      document.getElementById(par[1]).classList.remove('open');
+      document.getElementById(par[0]).classList.remove('active');
+    });
     document.getElementById('toggleMaterialesMenu').classList.remove('active');
     document.getElementById('togglePreferenciasMenu').classList.remove('active');
+    document.getElementById('toggleServiciosMenu').classList.remove('active');
     cerrarMaterialesDropdown();
     cerrarPreferenciasDropdown();
+    cerrarServiciosDropdown();
     cerrarAyudaDropdown();
     cerrarHamburguesa();
   }
@@ -800,6 +828,21 @@
     });
   });
 
+  subServicios.forEach(par => {
+    const btnId = par[0], panelId = par[1];
+    document.getElementById(btnId).addEventListener('click', () => {
+      const panel = document.getElementById(panelId);
+      const estabaAbierto = panel.classList.contains('open');
+      cerrarTodoElMenu();
+      if(!estabaAbierto){
+        panel.classList.add('open');
+        document.getElementById(btnId).classList.add('active');
+        document.getElementById('toggleServiciosMenu').classList.add('active');
+      }
+      actualizarVisibilidadInterfaz();
+    });
+  });
+
   // "Materiales", "Preferencias" y "Ayuda": enlaces de solo texto que despliegan un pequeno
   // listado justo debajo, en vez del icono de 3 rayitas de antes. Se cierran solos al elegir una
   // opcion, al hacer clic afuera o con la tecla Escape. Ademas son excluyentes entre si: abrir
@@ -833,6 +876,7 @@
   }
   const cerrarMaterialesDropdown = crearMenuTexto('toggleMaterialesMenu', 'materialesDropdown');
   const cerrarPreferenciasDropdown = crearMenuTexto('togglePreferenciasMenu', 'preferenciasDropdown');
+  const cerrarServiciosDropdown = crearMenuTexto('toggleServiciosMenu', 'serviciosDropdown');
   const cerrarAyudaDropdown = crearMenuTexto('toggleAyudaMenu', 'ayudaDropdown');
 
   // menu de 3 rayitas (solo visible en pantallas chicas / celulares, ver media query): colapsa
@@ -859,7 +903,7 @@
   });
 
   document.addEventListener('keydown', (e) => {
-    if(e.key === 'Escape'){ cerrarMaterialesDropdown(); cerrarPreferenciasDropdown(); cerrarAyudaDropdown(); cerrarHamburguesa(); }
+    if(e.key === 'Escape'){ cerrarMaterialesDropdown(); cerrarPreferenciasDropdown(); cerrarServiciosDropdown(); cerrarAyudaDropdown(); cerrarHamburguesa(); }
   });
 
   // "Mi cuenta", "Academia" y "Centro de ayuda": todavia no hay backend/paginas propias para
@@ -892,6 +936,10 @@
   document.getElementById('guardarConfigBtn').addEventListener('click', () => {
     clearTimeout(debounceTimer);
     recalcular();
+    cerrarPanelGuardado();
+  });
+  document.getElementById('guardarServiciosBtn').addEventListener('click', () => {
+    actualizarPrecioCatalogoVisible();
     cerrarPanelGuardado();
   });
   document.getElementById('guardarTablerosBtn').addEventListener('click', () => {
@@ -2663,7 +2711,7 @@
     'estiloLineaCorte','estiloLineaTapacanto','estiloLineaSobrante','estiloLineaHastaTope',
     'tipoFlechaSobrante','tamanoPuntaFlecha',
     'grosorCorte','grosorTapacanto','grosorFlechaSobrante','grosorLineaSobrante',
-    'plantillaReporte','fsTabs','escalaDiagrama',
+    'fsTabs','escalaDiagrama',
     'fuenteInterfaz','colorPrincipal','colorSecundario','colorFondo',
     'fsTituloPrincipal','fsTituloSeccion','radioEsquinas',
     'disenoTotal','colorFondoTotal',
@@ -2673,6 +2721,10 @@
     if(!control) return;
     control.addEventListener('input', recalcularDebounced);
     control.addEventListener('change', recalcularDebounced);
+  });
+  document.getElementById('plantillaReporte').addEventListener('change', () => {
+    leerEstilo();
+    renderResumenesEconomicosActuales();
   });
 
   // si el material/tapacanto que tenia seleccionado una fila ya no existe (se renombro o se
@@ -3265,9 +3317,9 @@
   attachEnterNavegable(document.getElementById('piezasBody'),
     '.p-cant, .p-l, .p-a, .p-girar, .p-material-input, .p-l1, .p-l2, .p-a1, .p-a2, .p-tapatipo-input, .p-label',
     'addPieza');
-  attachEnterNavegable(document.querySelector('#tablaMateriales tbody'), '.mat-sku, .mat-nombre, .mat-largo, .mat-ancho, .mat-espesor, .mat-precio', 'addMaterial');
-  attachEnterNavegable(document.querySelector('#tablaTapacantos tbody'), '.tapa-sku, .tapa-nombre, .tapa-precio', 'addTapacanto');
-  attachEnterNavegable(document.querySelector('#tablaComponentes tbody'), '.comp-sku, .comp-producto, .comp-precio', 'addComponente');
+  attachEnterNavegable(document.querySelector('#tablaMateriales tbody'), '.mat-sku, .mat-nombre, .mat-largo, .mat-ancho, .mat-espesor, .mat-precio, .mat-precio-venta', 'addMaterial');
+  attachEnterNavegable(document.querySelector('#tablaTapacantos tbody'), '.tapa-sku, .tapa-nombre, .tapa-precio, .tapa-precio-venta', 'addTapacanto');
+  attachEnterNavegable(document.querySelector('#tablaComponentes tbody'), '.comp-sku, .comp-producto, .comp-precio, .comp-precio-venta', 'addComponente');
   // "Componentes del proyecto" solo tiene un campo por fila (cantidad); Enter ahi salta a la
   // cantidad de la fila de abajo, y en la ultima fila salta al buscador de "agregar componente"
   // para seguir capturando sin usar el mouse (esta tabla no tiene boton "+ agregar fila" propio:
@@ -4563,7 +4615,7 @@
       precioCorteMetro,
       redondearTapacanto: document.getElementById('redondearTapacanto').checked
     });
-    return aplicarResultadoCostos({
+    const costosAplicados = aplicarResultadoCostos({
       state,
       resultadoCostos,
       resultadoPanel: document.getElementById('resultadoPanel'),
@@ -4576,6 +4628,11 @@
       mostrarErroresProyecto,
       renderReporte
     });
+    if(costosAplicados){
+      mostrarResumenCostos(state.ultimoCosto);
+      actualizarPrecioCatalogoVisible();
+    }
+    return costosAplicados;
   }
 
   // recalculo automatico: cualquier cambio en la tabla de piezas actualiza el diagrama y el costo
@@ -4612,6 +4669,8 @@
   document.getElementById('tableroAncho').addEventListener('input', () => actualizarMedidaTablero('tableroAncho', false));
   document.getElementById('precioCorte').addEventListener('input', recalcularDebounced);
   document.getElementById('precioCorteMetro').addEventListener('input', recalcularDebounced);
+  document.getElementById('precioVentaCorte').addEventListener('input', actualizarPrecioCatalogoVisible);
+  document.getElementById('precioVentaCorteMetro').addEventListener('input', actualizarPrecioCatalogoVisible);
   document.getElementById('modoPrecioCortePorCorte').addEventListener('change', recalcularDebounced);
   document.getElementById('modoPrecioCortePorMetro').addEventListener('change', recalcularDebounced);
   document.getElementById('corteGuillotina').addEventListener('change', recalcularDebounced);
@@ -5377,6 +5436,309 @@
       btn.textContent = textoOriginal;
     }
   }
+  let ultimoResultadoPreciosVisible = null;
+
+  function claseTotalResumen(){
+    const diseno = document.getElementById('disenoTotal').value;
+    if(diseno === 'solido') return 'total-bar tb-solido';
+    if(diseno === 'contorno') return 'total-bar tb-contorno';
+    if(diseno === 'linea') return 'total-bar tb-linea';
+    return 'total-bar';
+  }
+
+  function valorEconomicoPresentado(valor){
+    return typeof valor === 'number' && Number.isFinite(valor) ? fmtMoney(valor) : '—';
+  }
+
+  function textoEconomicoSeguro(valor){
+    return String(valor == null ? '' : valor)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function crearCategoriaEconomica(etiqueta, clase, subtotal, lineas){
+    return {etiqueta, clase, subtotal, lineas:lineas || []};
+  }
+
+  function categoriasResumenEconomico(resumen){
+    if(resumen && Array.isArray(resumen.categorias)) return resumen.categorias;
+    const datos = resumen || {};
+    return [
+      crearCategoriaEconomica('Materiales', '', datos.materiales, []),
+      crearCategoriaEconomica('Tapacantos', 'rt-tapa', datos.tapacantos, []),
+      crearCategoriaEconomica('Componentes', 'rt-componentes', datos.componentes, []),
+      crearCategoriaEconomica('Corte', 'rt-corte', datos.corte, [])
+    ];
+  }
+
+  function campoEconomico(etiqueta, valor, destacado){
+    const contenido = textoEconomicoSeguro(valor);
+    return '<div class="config-field"><label>' + textoEconomicoSeguro(etiqueta) + '</label>' +
+      (destacado ? '<strong>' + contenido + '</strong>' : '<span>' + contenido + '</span>') + '</div>';
+  }
+
+  function renderLineasEconomicas(lineas){
+    if(!lineas.length) return '';
+    return lineas.map(linea => (
+      '<div class="subpanel open">' +
+      '<div><strong>' + textoEconomicoSeguro(linea.nombre) + '</strong></div>' +
+      (linea.sku ? '<span class="sub">SKU ' + textoEconomicoSeguro(linea.sku) + '</span>' : '') +
+      '<div class="config-row">' +
+      campoEconomico('Cantidad', linea.cantidad) +
+      campoEconomico('Unidad', linea.unidad) +
+      (linea.medida ? campoEconomico('Medida', linea.medida) : '') +
+      campoEconomico('Tarifa', valorEconomicoPresentado(linea.tarifa)) +
+      campoEconomico('Subtotal', valorEconomicoPresentado(linea.subtotal), true) +
+      '</div>' +
+      '</div>'
+    )).join('');
+  }
+
+  function renderResumenEconomico(contenedorId, resumen, etiquetaTotal){
+    const datos = resumen || {total:null};
+    const categorias = categoriasResumenEconomico(resumen);
+    const plantilla = document.getElementById('plantillaReporte').value || 'columnas';
+    let contenido = '';
+
+    if(plantilla === 'lista'){
+      contenido = '<div class="reporte-lista">' + categorias.map(categoria => (
+        '<div class="rl-seccion"><div class="rl-titulo">' + categoria.etiqueta + '</div>' +
+        renderLineasEconomicas(categoria.lineas) +
+        '<div class="cost-line"><span>Subtotal</span><span>' +
+        valorEconomicoPresentado(categoria.subtotal) + '</span></div></div>'
+      )).join('') + '</div>';
+    }else if(plantilla === 'tarjetas'){
+      contenido = '<div class="reporte-tarjetas">' + categorias.map(categoria => (
+        '<div class="rt-card ' + categoria.clase + '"><h3>' + categoria.etiqueta + '</h3>' +
+        renderLineasEconomicas(categoria.lineas) +
+        '<div class="rt-subtotal"><span>Subtotal</span><span>' +
+        valorEconomicoPresentado(categoria.subtotal) + '</span></div></div>'
+      )).join('') + '</div>';
+    }else if(plantilla === 'factura'){
+      contenido = '<div class="reporte-factura"><table><thead><tr>' +
+        '<th>Concepto</th><th class="num">Importe</th></tr></thead><tbody>' +
+        categorias.map(categoria => (
+          '<tr><td><strong>' + categoria.etiqueta + '</strong>' +
+          renderLineasEconomicas(categoria.lineas) + '</td><td class="num">' +
+          valorEconomicoPresentado(categoria.subtotal) + '</td></tr>'
+        )).join('') + '</tbody></table></div>';
+    }else{
+      contenido = '<div class="cost-grid">' + categorias.map(categoria => (
+        '<div class="cost-col"><h3>' + categoria.etiqueta + '</h3>' +
+        renderLineasEconomicas(categoria.lineas) +
+        '<div class="cost-line sub"><span>Subtotal</span><span>' +
+        valorEconomicoPresentado(categoria.subtotal) + '</span></div></div>'
+      )).join('') + '</div>';
+    }
+
+    contenido += '<div class="' + claseTotalResumen() + '">' +
+      '<span class="label">' + etiquetaTotal + '</span>' +
+      '<span class="amount">' + valorEconomicoPresentado(datos.total) + '</span></div>';
+    document.getElementById(contenedorId).innerHTML = contenido;
+  }
+
+  function buscarCatalogoEconomico(catalogo, sku){
+    const skuBuscado = normalizarSkuManual(sku);
+    return catalogo.find(registro => normalizarSkuManual(registro.sku) === skuBuscado);
+  }
+
+  function unidadEconomica(cantidad, singular, plural){
+    return Number(cantidad) === 1 ? singular : plural;
+  }
+
+  function precioVentaPresentacion(registro){
+    return registro && typeof registro.precioVenta === 'number' && Number.isFinite(registro.precioVenta) && registro.precioVenta >= 0
+      ? registro.precioVenta
+      : null;
+  }
+
+  function construirResumenCostos(resultadoCostos){
+    const precioCortePorMetro = document.getElementById('modoPrecioCortePorMetro').checked;
+    return {
+      categorias:[
+        crearCategoriaEconomica('Materiales', '', resultadoCostos.costoMateriales, resultadoCostos.materiales.map(material => ({
+        nombre:material.nombre,
+        sku:material.sku,
+        cantidad:material.tableros,
+        unidad:unidadEconomica(material.tableros, 'Tablero', 'Tableros'),
+        tarifa:material.precioUnitario,
+        subtotal:material.importe
+      }))),
+        crearCategoriaEconomica('Tapacantos', 'rt-tapa', resultadoCostos.costoTapacanto, resultadoCostos.tapacantos.map(tapacanto => ({
+        nombre:tapacanto.tipo,
+        sku:tapacanto.sku,
+        cantidad:fmt(tapacanto.metrosCobrables),
+        unidad:'Metros',
+        tarifa:tapacanto.precioMetro,
+        subtotal:tapacanto.importe
+      }))),
+        crearCategoriaEconomica('Componentes', 'rt-componentes', resultadoCostos.costoComponentes, resultadoCostos.componentes.map(componente => ({
+        nombre:componente.producto,
+        sku:componente.sku,
+        cantidad:componente.cantidadTotal,
+        unidad:unidadEconomica(componente.cantidadTotal, 'Pieza', 'Piezas'),
+        tarifa:componente.precio,
+        subtotal:componente.importe
+      }))),
+        crearCategoriaEconomica('Corte', 'rt-corte', resultadoCostos.costoCorte, [{
+          nombre:'Corte',
+          sku:'',
+          cantidad:resultadoCostos.cortes,
+          unidad:unidadEconomica(resultadoCostos.cortes, 'Corte', 'Cortes'),
+          medida:`${fmt(resultadoCostos.corteMlPresentacion)} m`,
+          tarifa:precioCortePorMetro
+            ? Number(document.getElementById('precioCorteMetro').value)
+            : resultadoCostos.precioCorte,
+          subtotal:resultadoCostos.corteImporte
+        }])
+      ],
+      total:resultadoCostos.costoTotal
+    };
+  }
+
+  function construirResumenPrecios(resultadoCostos, resultadoPrecios){
+    const precioCortePorMetro = document.getElementById('modoPrecioCortePorMetro').checked;
+    return {
+      categorias:[
+        crearCategoriaEconomica('Materiales', '', resultadoPrecios.precioMateriales, resultadoCostos.materiales.map(material => {
+          const catalogo = buscarCatalogoEconomico(state.materiales, material.sku);
+          const precioVenta = precioVentaPresentacion(catalogo);
+          return {
+            nombre:(catalogo && catalogo.nombre) || material.nombre,
+            sku:material.sku,
+            cantidad:material.tableros,
+            unidad:unidadEconomica(material.tableros, 'Tablero', 'Tableros'),
+            tarifa:precioVenta,
+            subtotal:precioVenta === null ? null : precioVenta * material.tableros
+          };
+        })),
+        crearCategoriaEconomica('Tapacantos', 'rt-tapa', resultadoPrecios.precioTapacanto, resultadoCostos.tapacantos.map(tapacanto => {
+          const catalogo = buscarCatalogoEconomico(state.tapacantos, tapacanto.sku);
+          const precioVenta = precioVentaPresentacion(catalogo);
+          return {
+            nombre:(catalogo && catalogo.nombre) || tapacanto.tipo,
+            sku:tapacanto.sku,
+            cantidad:fmt(tapacanto.metrosCobrables),
+            unidad:'Metros',
+            tarifa:precioVenta,
+            subtotal:precioVenta === null ? null : precioVenta * tapacanto.metrosCobrables
+          };
+        })),
+        crearCategoriaEconomica('Componentes', 'rt-componentes', resultadoPrecios.precioComponentes, resultadoCostos.componentes.map(componente => {
+          const catalogo = buscarCatalogoEconomico(state.componentes, componente.sku);
+          const precioVenta = precioVentaPresentacion(catalogo);
+          return {
+            nombre:(catalogo && catalogo.producto) || componente.producto,
+            sku:componente.sku,
+            cantidad:componente.cantidadTotal,
+            unidad:unidadEconomica(componente.cantidadTotal, 'Pieza', 'Piezas'),
+            tarifa:precioVenta,
+            subtotal:precioVenta === null ? null : precioVenta * componente.cantidadTotal
+          };
+        })),
+        crearCategoriaEconomica('Corte', 'rt-corte', resultadoPrecios.precioCorte, [{
+          nombre:'Corte',
+          sku:'',
+          cantidad:resultadoCostos.cortes,
+          unidad:unidadEconomica(resultadoCostos.cortes, 'Corte', 'Cortes'),
+          medida:`${fmt(resultadoCostos.corteMlPresentacion)} m`,
+          tarifa:leerPrecioComercial(precioCortePorMetro ? 'precioVentaCorteMetro' : 'precioVentaCorte'),
+          subtotal:resultadoPrecios.precioCorte
+        }])
+      ],
+      total:resultadoPrecios.precioTotal
+    };
+  }
+
+  function mostrarResumenCostos(resultadoCostos){
+    renderResumenEconomico(
+      'resumenCostosContenido',
+      construirResumenCostos(resultadoCostos),
+      'Costo total'
+    );
+  }
+
+  function mostrarResumenPrecios(resultadoCostos, resultadoPrecios){
+    ultimoResultadoPreciosVisible = resultadoPrecios;
+    renderResumenEconomico(
+      'resumenPreciosContenido',
+      resultadoPrecios ? construirResumenPrecios(resultadoCostos, resultadoPrecios) : null,
+      'Precio venta total'
+    );
+  }
+
+  function limpiarResumenPrecios(){
+    ultimoResultadoPreciosVisible = null;
+    mostrarResumenPrecios(state.ultimoCosto, null);
+  }
+
+  function renderResumenesEconomicosActuales(){
+    if(state.ultimoCosto) mostrarResumenCostos(state.ultimoCosto);
+    mostrarResumenPrecios(state.ultimoCosto, ultimoResultadoPreciosVisible);
+  }
+
+  function leerPrecioComercial(id){
+    const valor = document.getElementById(id).value;
+    return valor === '' ? null : Number(valor);
+  }
+
+  function actualizarPrecioCatalogoVisible(){
+    if(!state.ultimoCosto){
+      limpiarResumenPrecios();
+      document.getElementById('estadoPrecioCatalogo').textContent =
+        'Calcula primero los costos del proyecto.';
+      return false;
+    }
+    const resultadoPrecio = ProyCutProjectPricing.calcularPrecioCatalogoProyecto({
+      resultadoCostos:state.ultimoCosto,
+      catalogoComercial:{
+        materiales:state.materiales,
+        componentes:state.componentes,
+        tapacantos:state.tapacantos,
+        corte:{
+          modo:document.getElementById('modoPrecioCortePorMetro').checked ? 'metro' : 'corte',
+          precioVentaCorte:leerPrecioComercial('precioVentaCorte'),
+          precioVentaCorteMetro:leerPrecioComercial('precioVentaCorteMetro')
+        }
+      }
+    });
+    if(!resultadoPrecio.ok){
+      if(resultadoPrecio.resultadoPrecios){
+        mostrarResumenPrecios(state.ultimoCosto, resultadoPrecio.resultadoPrecios);
+      }else{
+        limpiarResumenPrecios();
+      }
+      document.getElementById('estadoPrecioCatalogo').textContent =
+        resultadoPrecio.errores.map(error => error.mensaje).join(' ');
+      return false;
+    }
+    const precios = resultadoPrecio.resultadoPrecios;
+    mostrarResumenPrecios(state.ultimoCosto, precios);
+    document.getElementById('estadoPrecioCatalogo').textContent =
+      'Precio automático calculado con el catálogo comercial.';
+    return true;
+  }
+
+  document.getElementById('mostrarCostosProyecto').addEventListener('click', () => {
+    document.getElementById('costosProyectoPanel').hidden = false;
+    document.getElementById('preciosProyectoPanel').hidden = true;
+    document.getElementById('mostrarCostosProyecto').classList.add('active');
+    document.getElementById('mostrarPreciosProyecto').classList.remove('active');
+    document.getElementById('mostrarCostosProyecto').setAttribute('aria-selected', 'true');
+    document.getElementById('mostrarPreciosProyecto').setAttribute('aria-selected', 'false');
+  });
+  document.getElementById('mostrarPreciosProyecto').addEventListener('click', () => {
+    actualizarPrecioCatalogoVisible();
+    document.getElementById('costosProyectoPanel').hidden = true;
+    document.getElementById('preciosProyectoPanel').hidden = false;
+    document.getElementById('mostrarCostosProyecto').classList.remove('active');
+    document.getElementById('mostrarPreciosProyecto').classList.add('active');
+    document.getElementById('mostrarCostosProyecto').setAttribute('aria-selected', 'false');
+    document.getElementById('mostrarPreciosProyecto').setAttribute('aria-selected', 'true');
+  });
   document.getElementById('exportar').addEventListener('click', exportarExcel);
   document.getElementById('exportarDxf').addEventListener('click', exportarDXFZip);
 
