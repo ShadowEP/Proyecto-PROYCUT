@@ -125,6 +125,18 @@
     aplicarResultadoCostos
   } = window.ProyCutProjectResults;
 
+  const {
+    buildManufacturingPipeline
+  } = window.ProyCutManufacturingPipeline;
+
+  const {
+    ejecutarManufacturingExecution
+  } = window.ProyCutManufacturingExecutionFacade;
+
+  const {
+    crearManufacturingExecutionReport
+  } = window.ProyCutManufacturingExecutionReporter;
+
   let BOARD_W = 2440; // largo -> eje X
   let BOARD_H = 1220; // ancho -> eje Y
   let pieceCounter = 0;
@@ -4519,6 +4531,8 @@
 
   // ---------- Optimizar (recalculo completo: diagrama + costos) ----------
   let debounceTimer = null;
+  let ultimoManufacturingModel = null;
+  let ultimoReporteMadurezFabricacion = null;
   function recalcularDebounced(){
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(recalcular, 200);
@@ -4570,6 +4584,30 @@
       nivelOptimizacion
     } = preparacion.opcionesProyecto;
 
+    const manufacturingPipeline = buildManufacturingPipeline({
+      filasPiezas,
+      materiales:state.materiales,
+      tapacantos:state.tapacantos,
+      cantidadProyectos:cantidadProyectosCiclo,
+      permitirGirarAuto:nivelOptimizacion !== 'normal',
+      piezasActuales:piezas,
+      obtenerParametrosTecnicos:especificacion => {
+        const parametros = resolverParametrosCorteEtapa4(especificacion.id);
+        if(!parametros.ok) return parametros;
+        return {
+          ok:true,
+          errores:[],
+          kerfEfectivo:parametros.kerf,
+          kerfEntrePiezasEfectivo:parametros.kerfEntrePiezas,
+          kerfPiezaSobranteEfectivo:parametros.kerfPiezaSobrante,
+          kerfBordeExteriorEfectivo:parametros.kerfBordeExterior
+        };
+      },
+      desarrollo:window.PROYCUT_DEV === true,
+      logger:console
+    });
+    ultimoManufacturingModel = manufacturingPipeline.manufacturingModel;
+
     const optimizacion = optimizarProyectoPreparado({
       gruposPorMaterial: porMaterial,
       parametrosCorteProyecto: parametrosCorte,
@@ -4615,6 +4653,51 @@
       precioCorteMetro,
       redondearTapacanto: document.getElementById('redondearTapacanto').checked
     });
+    if(window.PROYCUT_DEV === true){
+      const {
+        optimizationResult:resultadoFabrication,
+        costResult:resultadoCostosFabrication,
+        optimizationComparison,
+        costComparison,
+        manufacturingExecutionSnapshot
+      } = ejecutarManufacturingExecution({
+        manufacturingPipeline,
+        parametrosCorteProyecto:parametrosCorte,
+        opcionesProyecto:{libre, nivelOptimizacion},
+        dependenciasOptimizer:{
+          medidaTableroDeMaterial,
+          establecerMedidaTableroActiva:() => {},
+          calcularRectanguloUtilTablero,
+          obtenerKerfMaterial,
+          calcularRectanguloColocacion,
+          empacarMaterial,
+          compactarHaciaAbajo,
+          contarCortes
+        },
+        datosProyectoCosting:{
+          piezas:manufacturingPipeline.optimizerInput.piezas,
+          materiales:state.materiales,
+          componentes:state.componentes,
+          componentesProyecto:state.componentesProyecto,
+          tapacantos:state.tapacantos,
+          cantidadProyectos:cantidadProyectosCiclo,
+          modoPrecioCorte,
+          precioCorte,
+          precioCorteMetro,
+          redondearTapacanto:document.getElementById('redondearTapacanto').checked
+        },
+        dependenciasCosting:{calcularCostosProyecto},
+        resultadoLegacy:{
+          optimizationResult:optimizacion,
+          costResult:resultadoCostos
+        }
+      });
+      ultimoReporteMadurezFabricacion = crearManufacturingExecutionReport({
+        manufacturingExecutionSnapshot,
+        equivalenceReport:manufacturingPipeline.equivalenceReport
+      });
+      console.info('Manufacturing full equivalence', ultimoReporteMadurezFabricacion);
+    }
     const costosAplicados = aplicarResultadoCostos({
       state,
       resultadoCostos,
