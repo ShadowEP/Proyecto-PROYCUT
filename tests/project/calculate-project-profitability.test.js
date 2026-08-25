@@ -36,7 +36,8 @@ function crearEscenario(resultadoDominio){
 function crearEntradas(){
   return {
     resultadoCostos:Object.freeze({costoTotal:800}),
-    resultadoPrecios:Object.freeze({precioTotal:1200})
+    resultadoPrecios:Object.freeze({precioTotal:1200}),
+    politicaRentabilidad:Object.freeze({incluirCostoCorte:false})
   };
 }
 
@@ -69,6 +70,10 @@ probar('delega exactamente una vez con las mismas referencias', () => {
     escenario.llamadasDominio[0].resultadoPrecios,
     entradas.resultadoPrecios
   );
+  assert.strictEqual(
+    escenario.llamadasDominio[0].politicaRentabilidad,
+    entradas.politicaRentabilidad
+  );
 });
 
 probar('delega entradas ausentes al dominio sin clasificarlas', () => {
@@ -80,6 +85,7 @@ probar('delega entradas ausentes al dominio sin clasificarlas', () => {
   assert.strictEqual(escenario.llamadasDominio.length, 1);
   assert.strictEqual(escenario.llamadasDominio[0].resultadoCostos, undefined);
   assert.strictEqual(escenario.llamadasDominio[0].resultadoPrecios, undefined);
+  assert.strictEqual(escenario.llamadasDominio[0].politicaRentabilidad, undefined);
   assert.strictEqual(resultado, resultadoDominio);
   assert.deepStrictEqual(Object.keys(resultado), ['ok', 'origen']);
 });
@@ -127,6 +133,7 @@ probar('no modifica las entradas', () => {
 
   assert.deepStrictEqual(entradas.resultadoCostos, {costoTotal:800});
   assert.deepStrictEqual(entradas.resultadoPrecios, {precioTotal:1200});
+  assert.deepStrictEqual(entradas.politicaRentabilidad, {incluirCostoCorte:false});
 });
 
 probar('no contiene dependencias prohibidas', () => {
@@ -153,4 +160,13 @@ probar('no duplica formulas economicas ni estados del dominio', () => {
     'PRECIO_PARCIAL',
     'DATOS_INVALIDOS'
   ].forEach(identificador => assert.ok(!codigoCasoUso.includes(identificador)));
+});
+
+probar('no contiene defaults de la politica', () => {
+  [
+    'incluirCostoCorte:true',
+    'incluirPrecioCorte:true',
+    'incluirCostoTapacanto:true',
+    'incluirPrecioTapacanto:true'
+  ].forEach(defaultDuplicado => assert.ok(!codigoCasoUso.includes(defaultDuplicado)));
 });
