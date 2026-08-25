@@ -223,6 +223,86 @@ probar('precio de corte faltante mantiene total de categorias comerciales valida
   assert.strictEqual(resultado.resultadoPrecios.precioTotal, 17550);
 });
 
+probar('corte por pieza no utilizado no exige tarifa comercial', () => {
+  const resultadoCostos = crearResultadoCostos();
+  resultadoCostos.cortes = 0;
+  const catalogo = crearCatalogo();
+  catalogo.corte.precioVentaCorte = null;
+
+  const resultado = calcularPrecioProyecto(
+    resultadoCostos,
+    {metodo:'CATALOGO', catalogoComercial:catalogo}
+  );
+
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.precioCorte, 0);
+  assert.strictEqual(resultado.resultadoPrecios.precioTotal, 1358);
+});
+
+probar('corte por metro no utilizado no exige tarifa comercial', () => {
+  const resultadoCostos = crearResultadoCostos();
+  resultadoCostos.corteMl = 0;
+  const catalogo = crearCatalogo();
+  catalogo.corte.modo = 'metro';
+  catalogo.corte.precioVentaCorteMetro = null;
+
+  const resultado = calcularPrecioProyecto(
+    resultadoCostos,
+    {metodo:'CATALOGO', catalogoComercial:catalogo}
+  );
+
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.precioCorte, 0);
+  assert.strictEqual(resultado.resultadoPrecios.precioTotal, 1358);
+});
+
+probar('corte utilizado acepta tarifa comercial cero', () => {
+  const catalogo = crearCatalogo();
+  catalogo.corte.precioVentaCorte = 0;
+
+  const resultado = calcularPrecioProyecto(
+    crearResultadoCostos(),
+    {metodo:'CATALOGO', catalogoComercial:catalogo}
+  );
+
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.precioCorte, 0);
+  assert.strictEqual(resultado.resultadoPrecios.precioTotal, 1358);
+});
+
+probar('cantidad tecnica invalida de corte por pieza conserva su error', () => {
+  const resultadoCostos = crearResultadoCostos();
+  resultadoCostos.cortes = -1;
+  const catalogo = crearCatalogo();
+  catalogo.corte.precioVentaCorte = null;
+
+  const resultado = calcularPrecioProyecto(
+    resultadoCostos,
+    {metodo:'CATALOGO', catalogoComercial:catalogo}
+  );
+
+  assert.strictEqual(resultado.ok, false);
+  assert.ok(resultado.errores.some(error => error.codigo === 'CANTIDAD_TECNICA_CORTE_INVALIDA'));
+  assert.strictEqual(resultado.resultadoPrecios.precioCorte, null);
+});
+
+probar('cantidad tecnica invalida de corte por metro conserva su error', () => {
+  const resultadoCostos = crearResultadoCostos();
+  resultadoCostos.corteMl = Infinity;
+  const catalogo = crearCatalogo();
+  catalogo.corte.modo = 'metro';
+  catalogo.corte.precioVentaCorteMetro = null;
+
+  const resultado = calcularPrecioProyecto(
+    resultadoCostos,
+    {metodo:'CATALOGO', catalogoComercial:catalogo}
+  );
+
+  assert.strictEqual(resultado.ok, false);
+  assert.ok(resultado.errores.some(error => error.codigo === 'CANTIDAD_TECNICA_CORTE_INVALIDA'));
+  assert.strictEqual(resultado.resultadoPrecios.precioCorte, null);
+});
+
 probar('precio de corte usa valor comercial y no costoCorte', () => {
   const resultadoCostos = crearResultadoCostos();
   resultadoCostos.costoCorte = 999;
