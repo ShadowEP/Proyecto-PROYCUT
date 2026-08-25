@@ -4577,6 +4577,7 @@
       state.boards = [];
       state.ultimoReporte = null;
       if(preparacion.etapa !== 'piezas') state.ultimoTotal = 0;
+      actualizarResultadoRentabilidad();
       return false;
     }
     const parametrosCorte = preparacion.parametrosCorteProyecto;
@@ -4738,6 +4739,8 @@
     if(costosAplicados){
       mostrarResumenCostos(state.ultimoCosto);
       actualizarPrecioCatalogoVisible();
+    }else{
+      actualizarResultadoRentabilidad();
     }
     return costosAplicados;
   }
@@ -5544,6 +5547,16 @@
     }
   }
   let ultimoResultadoPreciosVisible = null;
+  let ultimoResultadoRentabilidadVisible = null;
+
+  function actualizarResultadoRentabilidad(resultadoCostos, resultadoPrecios){
+    const resultado = ProyCutProjectProfitability.calcularRentabilidadDelProyecto({
+      resultadoCostos,
+      resultadoPrecios
+    });
+    ultimoResultadoRentabilidadVisible = resultado.resultadoRentabilidad;
+    return resultado;
+  }
 
   function claseTotalResumen(){
     const diseno = document.getElementById('disenoTotal').value;
@@ -5795,6 +5808,7 @@
   function actualizarPrecioCatalogoVisible(){
     if(!state.ultimoCosto){
       limpiarResumenPrecios();
+      actualizarResultadoRentabilidad();
       document.getElementById('estadoPrecioCatalogo').textContent =
         'Calcula primero los costos del proyecto.';
       return false;
@@ -5812,6 +5826,10 @@
         }
       }
     });
+    actualizarResultadoRentabilidad(
+      state.ultimoCosto,
+      resultadoPrecio.resultadoPrecios
+    );
     if(!resultadoPrecio.ok){
       if(resultadoPrecio.resultadoPrecios){
         mostrarResumenPrecios(state.ultimoCosto, resultadoPrecio.resultadoPrecios);
