@@ -11,8 +11,13 @@ const rutaAdapter = path.resolve(
   __dirname,
   '../../src/scripts/project/pricing-application-adapter.js'
 );
+const rutaCasoUso = path.resolve(
+  __dirname,
+  '../../src/scripts/project/calculate-project-price.js'
+);
 const codigoPricing = fs.readFileSync(rutaPricing, 'utf8');
 const codigoAdapter = fs.readFileSync(rutaAdapter, 'utf8');
+const codigoCasoUso = fs.readFileSync(rutaCasoUso, 'utf8');
 const contextoPrueba = vm.createContext({
   invocacionesPricing:[],
   ultimoResultadoPricing:null
@@ -31,7 +36,9 @@ vm.runInContext(
       return ultimoResultadoPricing;
     };
     ${codigoAdapter}
+    ${codigoCasoUso}
     globalThis.adapterIntegrado = ProyCutPricingApplicationAdapter;
+    globalThis.casoUsoIntegrado = ProyCutProjectPricing;
   `,
   contextoPrueba,
   {filename:'pricing-application-integration'}
@@ -108,4 +115,51 @@ probar('adapter propaga exactamente los errores reales de Pricing', () => {
   assert.ok(
     resultado.errores.some(error => error.codigo === 'PRECIO_MANUAL_REQUERIDO')
   );
+});
+
+probar('Application integra GLOBAL 0% sin catalogo comercial', () => {
+  const resultadoCostos = crearResultadoCostos();
+  const resultado = contextoPrueba.casoUsoIntegrado.calcularPrecioDelProyecto({
+    resultadoCostos,
+    politicaPrecios:{modo:'GLOBAL_SOBRE_COSTO', porcentajeSobreCosto:0}
+  });
+
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.precioFinal, 800);
+  assert.strictEqual(resultado.resultadoPrecios.precioTotal, 800);
+});
+
+probar('Application integra GLOBAL 30% y conserva precision del Domain', () => {
+  const resultadoCostos = crearResultadoCostos();
+  const politicaPrecios = {
+    modo:'GLOBAL_SOBRE_COSTO',
+    porcentajeSobreCosto:30.5
+  };
+  const costosAntes = JSON.stringify(resultadoCostos);
+  const politicaAntes = JSON.stringify(politicaPrecios);
+
+  const resultado = contextoPrueba.casoUsoIntegrado.calcularPrecioDelProyecto({
+    resultadoCostos,
+    catalogoComercial:null,
+    politicaPrecios
+  });
+
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.precioFinal, 800 * 1.305);
+  assert.strictEqual(resultado.resultadoPrecios.metodoAplicado, 'GLOBAL_SOBRE_COSTO');
+  assert.strictEqual(resultado.resultadoPrecios.desgloseCategorias, null);
+  assert.strictEqual(JSON.stringify(resultadoCostos), costosAntes);
+  assert.strictEqual(JSON.stringify(politicaPrecios), politicaAntes);
+});
+
+probar('Application propaga validacion matematica GLOBAL del Domain', () => {
+  const resultado = contextoPrueba.casoUsoIntegrado.calcularPrecioDelProyecto({
+    resultadoCostos:crearResultadoCostos(),
+    politicaPrecios:{modo:'GLOBAL_SOBRE_COSTO', porcentajeSobreCosto:'30'}
+  });
+
+  assert.strictEqual(resultado.ok, false);
+  assert.ok(resultado.errores.some(error => (
+    error.codigo === 'PORCENTAJE_SOBRE_COSTO_INVALIDO'
+  )));
 });
