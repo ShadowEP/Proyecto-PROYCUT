@@ -1,6 +1,8 @@
 const ProyCutPricing = (function(){
   const METODO_PRECIO_FIJO = 'PRECIO_FIJO';
   const METODO_CATALOGO = 'CATALOGO';
+  const METODO_GLOBAL_SOBRE_COSTO = 'GLOBAL_SOBRE_COSTO';
+  const TIPO_MARKUP_SOBRE_COSTO = 'MARKUP_SOBRE_COSTO';
   const CAMPOS_RESULTADO_COSTOS = [
     'costoMateriales',
     'costoComponentes',
@@ -213,7 +215,76 @@ const ProyCutPricing = (function(){
       : {ok:true, resultadoPrecios};
   }
 
+  function calcularPrecioGlobalSobreCosto(resultadoCostos, contextoComercial){
+    if(
+      !resultadoCostos ||
+      typeof resultadoCostos !== 'object' ||
+      Array.isArray(resultadoCostos) ||
+      typeof resultadoCostos.costoTotal !== 'number' ||
+      !Number.isFinite(resultadoCostos.costoTotal) ||
+      resultadoCostos.costoTotal < 0
+    ){
+      return {
+        ok:false,
+        errores:[crearError(
+          'COSTO_TOTAL_INVALIDO',
+          'costoTotal debe ser un numero finito no negativo.'
+        )]
+      };
+    }
+
+    if(
+      !Object.prototype.hasOwnProperty.call(contextoComercial, 'porcentajeSobreCosto') ||
+      contextoComercial.porcentajeSobreCosto === undefined
+    ){
+      return {
+        ok:false,
+        errores:[crearError(
+          'PORCENTAJE_SOBRE_COSTO_REQUERIDO',
+          'El metodo GLOBAL_SOBRE_COSTO requiere un porcentajeSobreCosto explicito.'
+        )]
+      };
+    }
+
+    const porcentajeSobreCosto = contextoComercial.porcentajeSobreCosto;
+    if(
+      typeof porcentajeSobreCosto !== 'number' ||
+      !Number.isFinite(porcentajeSobreCosto) ||
+      porcentajeSobreCosto < 0
+    ){
+      return {
+        ok:false,
+        errores:[crearError(
+          'PORCENTAJE_SOBRE_COSTO_INVALIDO',
+          'porcentajeSobreCosto debe ser un numero finito no negativo.'
+        )]
+      };
+    }
+
+    const precioGlobal = resultadoCostos.costoTotal * (1 + porcentajeSobreCosto / 100);
+    return {
+      ok:true,
+      resultadoPrecios:{
+        metodoAplicado:METODO_GLOBAL_SOBRE_COSTO,
+        precioBase:precioGlobal,
+        precioFinal:precioGlobal,
+        precioTotal:precioGlobal,
+        porcentajeAplicado:{
+          tipo:TIPO_MARKUP_SOBRE_COSTO,
+          valor:porcentajeSobreCosto
+        },
+        desgloseCategorias:null,
+        descuentoAplicado:null,
+        advertencias:[]
+      }
+    };
+  }
+
   function calcularPrecioProyecto(resultadoCostos, contextoComercial){
+    if(contextoComercial && contextoComercial.metodo === METODO_GLOBAL_SOBRE_COSTO){
+      return calcularPrecioGlobalSobreCosto(resultadoCostos, contextoComercial);
+    }
+
     const erroresCostos = validarResultadoCostos(resultadoCostos);
     if(erroresCostos.length > 0){
       return {ok:false, errores:erroresCostos};
