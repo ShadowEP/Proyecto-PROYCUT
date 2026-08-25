@@ -2,6 +2,7 @@ const ProyCutProfitability = (function(){
   const ESTADO_PRECIO_COMPLETO = 'PRECIO_COMPLETO';
   const ESTADO_PRECIO_PARCIAL = 'PRECIO_PARCIAL';
   const ESTADO_DATOS_INVALIDOS = 'DATOS_INVALIDOS';
+  const METODO_GLOBAL_SOBRE_COSTO = 'GLOBAL_SOBRE_COSTO';
   const CAMPOS_PRECIO = [
     'precioMateriales',
     'precioComponentes',
@@ -98,20 +99,29 @@ const ProyCutProfitability = (function(){
       typeof resultadoPrecios === 'object' &&
       !Array.isArray(resultadoPrecios)
     );
-    const camposPrecioInvalidos = preciosSonObjeto
+    const esPrecioGlobal = Boolean(
+      preciosSonObjeto &&
+      resultadoPrecios.metodoAplicado === METODO_GLOBAL_SOBRE_COSTO
+    );
+    const camposPrecioInvalidos = preciosSonObjeto && !esPrecioGlobal
       ? CAMPOS_PRECIO.filter(campo => (
         resultadoPrecios[campo] !== null &&
         !esImporteValido(resultadoPrecios[campo])
       ))
-      : CAMPOS_PRECIO.slice();
-    if(
-      !preciosSonObjeto ||
-      camposPrecioInvalidos.length > 0 ||
-      !esImporteValido(resultadoPrecios && resultadoPrecios.precioTotal)
-    ){
+      : [];
+    const resultadoPreciosInvalido = esPrecioGlobal
+      ? !esImporteValido(resultadoPrecios.precioFinal)
+      : (
+        !preciosSonObjeto ||
+        camposPrecioInvalidos.length > 0 ||
+        !esImporteValido(resultadoPrecios && resultadoPrecios.precioTotal)
+      );
+    if(resultadoPreciosInvalido){
       errores.push(crearMensaje(
         'RESULTADO_PRECIOS_INVALIDO',
-        'ResultadoPrecios debe incluir subtotales nulos o finitos no negativos y un precioTotal finito no negativo.'
+        esPrecioGlobal
+          ? 'ResultadoPrecios global debe incluir un precioFinal finito no negativo.'
+          : 'ResultadoPrecios debe incluir subtotales nulos o finitos no negativos y un precioTotal finito no negativo.'
       ));
     }
 
@@ -130,7 +140,7 @@ const ProyCutProfitability = (function(){
       ...(politica.incluirPrecioCorte ? ['precioCorte'] : []),
       ...(politica.incluirPrecioTapacanto ? ['precioTapacanto'] : [])
     ];
-    const precioCompleto = camposPrecioParticipantes.every(campo => (
+    const precioCompleto = esPrecioGlobal || camposPrecioParticipantes.every(campo => (
       esImporteValido(resultadoPrecios[campo])
     ));
     if(!precioCompleto){
@@ -157,9 +167,15 @@ const ProyCutProfitability = (function(){
       };
     }
 
-    const precioTotal = resultadoPrecios.precioTotal;
-    const precioConsiderado = camposPrecioParticipantes
-      .reduce((total, campo) => total + resultadoPrecios[campo], 0);
+    const precioTotal = esPrecioGlobal
+      ? resultadoPrecios.precioFinal
+      : resultadoPrecios.precioTotal;
+    const precioConsiderado = esPrecioGlobal
+      ? resultadoPrecios.precioFinal
+      : camposPrecioParticipantes.reduce(
+        (total, campo) => total + resultadoPrecios[campo],
+        0
+      );
     const utilidad = precioConsiderado - costoConsiderado;
     const advertencias = [];
     let markupPorcentaje = null;
@@ -189,7 +205,7 @@ const ProyCutProfitability = (function(){
         estado:ESTADO_PRECIO_COMPLETO,
         costoTotal,
         precioTotal,
-        precioDisponible:null,
+        precioDisponible:esPrecioGlobal ? resultadoPrecios.precioFinal : null,
         costoConsiderado,
         precioConsiderado,
         utilidad,

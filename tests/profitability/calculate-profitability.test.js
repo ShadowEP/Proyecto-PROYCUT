@@ -35,6 +35,20 @@ function crearResultadoPrecios(overrides = {}){
   };
 }
 
+function crearResultadoPreciosGlobal(precioFinal, overrides = {}){
+  return {
+    metodoAplicado:'GLOBAL_SOBRE_COSTO',
+    precioBase:precioFinal,
+    precioFinal,
+    precioTotal:precioFinal,
+    porcentajeAplicado:{tipo:'MARKUP_SOBRE_COSTO', valor:30},
+    desgloseCategorias:null,
+    descuentoAplicado:null,
+    advertencias:[],
+    ...overrides
+  };
+}
+
 function plano(valor){
   return JSON.parse(JSON.stringify(valor));
 }
@@ -300,6 +314,190 @@ probar('datos invalidos tienen campos considerados nulos', () => {
     assert.strictEqual(resultado.resultadoRentabilidad.precioConsiderado, null);
     assert.ok(resultado.errores.length > 0);
   });
+});
+
+probar('GLOBAL calcula utilidad, markup y margen con precioFinal', () => {
+  const resultado = calcularRentabilidadProyecto({
+    resultadoCostos:crearResultadoCostos({
+      costoMateriales:800,
+      costoComponentes:100,
+      costoCorte:50,
+      costoTapacanto:50,
+      costoTotal:1000
+    }),
+    resultadoPrecios:crearResultadoPreciosGlobal(1300)
+  }).resultadoRentabilidad;
+
+  assert.strictEqual(resultado.estado, 'PRECIO_COMPLETO');
+  assert.strictEqual(resultado.costoTotal, 1000);
+  assert.strictEqual(resultado.costoConsiderado, 1000);
+  assert.strictEqual(resultado.precioTotal, 1300);
+  assert.strictEqual(resultado.precioDisponible, 1300);
+  assert.strictEqual(resultado.precioConsiderado, 1300);
+  assert.strictEqual(resultado.utilidad, 300);
+  assert.strictEqual(resultado.markupPorcentaje, 30);
+  assert.strictEqual(resultado.margenPorcentaje, 300 / 1300 * 100);
+});
+
+probar('GLOBAL acepta precioFinal cero y emite advertencia de margen', () => {
+  const resultado = calcularRentabilidadProyecto({
+    resultadoCostos:crearResultadoCostos(),
+    resultadoPrecios:crearResultadoPreciosGlobal(0)
+  }).resultadoRentabilidad;
+
+  assert.strictEqual(resultado.estado, 'PRECIO_COMPLETO');
+  assert.strictEqual(resultado.precioTotal, 0);
+  assert.strictEqual(resultado.precioDisponible, 0);
+  assert.strictEqual(resultado.precioConsiderado, 0);
+  assert.strictEqual(resultado.utilidad, -800);
+  assert.strictEqual(resultado.margenPorcentaje, null);
+  assert.ok(resultado.advertencias.some(aviso => (
+    aviso.codigo === 'MARGEN_INDEFINIDO_PRECIO_CERO'
+  )));
+});
+
+probar('GLOBAL con costo considerado cero deja markup indefinido', () => {
+  const resultado = calcularRentabilidadProyecto({
+    resultadoCostos:crearResultadoCostos({
+      costoMateriales:0,
+      costoComponentes:0,
+      costoCorte:120,
+      costoTapacanto:80,
+      costoTotal:200
+    }),
+    resultadoPrecios:crearResultadoPreciosGlobal(260),
+    politicaRentabilidad:{incluirCostoCorte:false, incluirCostoTapacanto:false}
+  }).resultadoRentabilidad;
+
+  assert.strictEqual(resultado.costoConsiderado, 0);
+  assert.strictEqual(resultado.precioConsiderado, 260);
+  assert.strictEqual(resultado.utilidad, 260);
+  assert.strictEqual(resultado.markupPorcentaje, null);
+  assert.ok(resultado.advertencias.some(aviso => (
+    aviso.codigo === 'MARKUP_INDEFINIDO_COSTO_CERO'
+  )));
+});
+
+probar('GLOBAL rechaza precioFinal negativo o no finito', () => {
+  [-1, NaN, Infinity, -Infinity].forEach(precioFinal => {
+    const resultado = calcularRentabilidadProyecto({
+      resultadoCostos:crearResultadoCostos(),
+      resultadoPrecios:crearResultadoPreciosGlobal(precioFinal)
+    });
+    assert.strictEqual(resultado.ok, false);
+    assert.strictEqual(resultado.resultadoRentabilidad.estado, 'DATOS_INVALIDOS');
+    assert.ok(resultado.errores.some(error => (
+      error.codigo === 'RESULTADO_PRECIOS_INVALIDO'
+    )));
+  });
+});
+
+probar('GLOBAL no inspecciona ni exige precios individuales', () => {
+  const resultado = calcularRentabilidadProyecto({
+    resultadoCostos:crearResultadoCostos(),
+    resultadoPrecios:crearResultadoPreciosGlobal(1040, {
+      precioMateriales:undefined,
+      precioComponentes:null,
+      precioCorte:NaN,
+      precioTapacanto:Infinity
+    })
+  }).resultadoRentabilidad;
+
+  assert.strictEqual(resultado.estado, 'PRECIO_COMPLETO');
+  assert.strictEqual(resultado.precioTotal, 1040);
+  assert.strictEqual(resultado.precioConsiderado, 1040);
+});
+
+probar('flags de precio son no aplicables al precio GLOBAL', () => {
+  [
+    {incluirPrecioCorte:false},
+    {incluirPrecioTapacanto:false},
+    {incluirPrecioCorte:false, incluirPrecioTapacanto:false}
+  ].forEach(politicaRentabilidad => {
+    const resultado = calcularRentabilidadProyecto({
+      resultadoCostos:crearResultadoCostos(),
+      resultadoPrecios:crearResultadoPreciosGlobal(1040),
+      politicaRentabilidad
+    }).resultadoRentabilidad;
+    assert.strictEqual(resultado.estado, 'PRECIO_COMPLETO');
+    assert.strictEqual(resultado.precioTotal, 1040);
+    assert.strictEqual(resultado.precioConsiderado, 1040);
+  });
+});
+
+probar('flags de costo cambian analisis sin recalcular precio GLOBAL', () => {
+  const resultadoCostos = crearResultadoCostos({
+    costoMateriales:800,
+    costoComponentes:100,
+    costoCorte:50,
+    costoTapacanto:50,
+    costoTotal:1000
+  });
+  const resultadoPrecios = crearResultadoPreciosGlobal(1300);
+  const costosAntes = JSON.stringify(resultadoCostos);
+  const preciosAntes = JSON.stringify(resultadoPrecios);
+  const politicaRentabilidad = {
+    incluirCostoCorte:false,
+    incluirCostoTapacanto:false,
+    incluirPrecioCorte:false,
+    incluirPrecioTapacanto:false
+  };
+  const politicaAntes = JSON.stringify(politicaRentabilidad);
+
+  const resultado = calcularRentabilidadProyecto({
+    resultadoCostos,
+    resultadoPrecios,
+    politicaRentabilidad
+  }).resultadoRentabilidad;
+
+  assert.strictEqual(resultado.costoTotal, 1000);
+  assert.strictEqual(resultado.costoConsiderado, 900);
+  assert.strictEqual(resultado.precioTotal, 1300);
+  assert.strictEqual(resultado.precioConsiderado, 1300);
+  assert.strictEqual(resultado.utilidad, 400);
+  assert.strictEqual(JSON.stringify(resultadoCostos), costosAntes);
+  assert.strictEqual(JSON.stringify(resultadoPrecios), preciosAntes);
+  assert.strictEqual(JSON.stringify(politicaRentabilidad), politicaAntes);
+});
+
+probar('cada flag de costo se aplica por separado al analisis GLOBAL', () => {
+  const resultadoCostos = crearResultadoCostos({
+    costoMateriales:800,
+    costoComponentes:100,
+    costoCorte:50,
+    costoTapacanto:50,
+    costoTotal:1000
+  });
+  [
+    {politica:{incluirCostoCorte:false}, costoConsiderado:950},
+    {politica:{incluirCostoTapacanto:false}, costoConsiderado:950}
+  ].forEach(caso => {
+    const resultado = calcularRentabilidadProyecto({
+      resultadoCostos,
+      resultadoPrecios:crearResultadoPreciosGlobal(1300),
+      politicaRentabilidad:caso.politica
+    }).resultadoRentabilidad;
+    assert.strictEqual(resultado.costoConsiderado, caso.costoConsiderado);
+    assert.strictEqual(resultado.precioConsiderado, 1300);
+    assert.strictEqual(resultado.utilidad, 350);
+  });
+});
+
+probar('GLOBAL conserva perdida y precision sin redondeo', () => {
+  const resultado = calcularRentabilidadProyecto({
+    resultadoCostos:crearResultadoCostos({
+      costoMateriales:1,
+      costoComponentes:2,
+      costoCorte:0,
+      costoTapacanto:0,
+      costoTotal:3
+    }),
+    resultadoPrecios:crearResultadoPreciosGlobal(2.5)
+  }).resultadoRentabilidad;
+
+  assert.strictEqual(resultado.utilidad, -0.5);
+  assert.strictEqual(resultado.markupPorcentaje, -0.5 / 3 * 100);
+  assert.strictEqual(resultado.margenPorcentaje, -0.5 / 2.5 * 100);
 });
 
 probar('el dominio no depende de productores ni plataforma', () => {
