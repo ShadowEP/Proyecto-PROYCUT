@@ -12,6 +12,10 @@ const rutasCadena = [
   'src/scripts/project/pricing-application-adapter.js',
   'src/scripts/project/calculate-project-price.js'
 ];
+const rutasProfitability = [
+  'src/scripts/profitability/calculate-profitability.js',
+  'src/scripts/project/calculate-project-profitability.js'
+];
 
 function probar(nombre, prueba){
   prueba();
@@ -114,6 +118,9 @@ probar('COSTOS 4 x 700 y PRECIOS 4 x 1000 conservan identidad y cantidad', () =>
   const codigoCadena = rutasCadena.map(ruta => (
     fs.readFileSync(path.join(raizProyecto, ruta), 'utf8')
   )).join('\n');
+  const codigoProfitability = rutasProfitability.map(ruta => (
+    fs.readFileSync(path.join(raizProyecto, ruta), 'utf8')
+  )).join('\n');
   const inicio = main.indexOf('let ultimoResultadoPreciosVisible = null;');
   const fin = main.indexOf(
     "document.getElementById('mostrarCostosProyecto').addEventListener",
@@ -170,7 +177,7 @@ probar('COSTOS 4 x 700 y PRECIOS 4 x 1000 conservan identidad y cantidad', () =>
   });
 
   vm.runInContext(
-    `${codigoCadena}\n${codigoIntegracion}\n` +
+    `${codigoCadena}\n${codigoProfitability}\n${codigoIntegracion}\n` +
       ';globalThis.mostrarCostos = mostrarResumenCostos;' +
       ';globalThis.actualizarPrecios = actualizarPrecioCatalogoVisible;',
     contexto,
