@@ -138,6 +138,7 @@ probar('precio completo actualiza rentabilidad productiva', () => {
 
 probar('precio parcial actualiza y conserva precioDisponible', () => {
   const escenario = crearEscenario();
+  escenario.state.ultimoCosto.cortes = 1;
   escenario.elementos.precioVentaCorte.value = '';
   assert.strictEqual(escenario.contexto.actualizarPrecios(), false);
   const resultado = escenario.contexto.obtenerRentabilidad();
@@ -146,6 +147,29 @@ probar('precio parcial actualiza y conserva precioDisponible', () => {
   assert.strictEqual(resultado.utilidad, null);
   assert.strictEqual(resultado.markupPorcentaje, null);
   assert.strictEqual(resultado.margenPorcentaje, null);
+});
+
+probar('proyecto solo con material y sin corte produce rentabilidad completa', () => {
+  const escenario = crearEscenario();
+  escenario.elementos.precioVentaCorte.value = '';
+
+  assert.strictEqual(escenario.contexto.actualizarPrecios(), true);
+  const resultado = escenario.contexto.obtenerRentabilidad();
+  assert.strictEqual(resultado.estado, 'PRECIO_COMPLETO');
+  assert.strictEqual(resultado.precioTotal, 1500);
+  assert.strictEqual(resultado.utilidad, 500);
+});
+
+probar('material utilizado sin precio comercial mantiene rentabilidad parcial', () => {
+  const escenario = crearEscenario();
+  escenario.state.materiales[0].precioVenta = null;
+  escenario.elementos.precioVentaCorte.value = '';
+
+  assert.strictEqual(escenario.contexto.actualizarPrecios(), false);
+  const resultado = escenario.contexto.obtenerRentabilidad();
+  assert.strictEqual(resultado.estado, 'PRECIO_PARCIAL');
+  assert.strictEqual(resultado.precioDisponible, 0);
+  assert.strictEqual(resultado.utilidad, null);
 });
 
 probar('Pricing sin resultado invalida la rentabilidad anterior', () => {

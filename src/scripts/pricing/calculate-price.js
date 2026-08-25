@@ -165,18 +165,22 @@ const ProyCutPricing = (function(){
     if(!corte || typeof corte !== 'object' || Array.isArray(corte)){
       errores.push(crearError('PRECIO_VENTA_CORTE_REQUERIDO', 'Se requiere la configuracion comercial del corte.'));
     }else if(corte.modo === 'metro'){
-      if(typeof corte.precioVentaCorteMetro !== 'number' || !Number.isFinite(corte.precioVentaCorteMetro) || corte.precioVentaCorteMetro < 0){
-        errores.push(crearError('PRECIO_VENTA_CORTE_INVALIDO', 'precioVentaCorteMetro debe ser un numero finito no negativo.'));
-      }else if(typeof resultadoCostos.corteMl !== 'number' || !Number.isFinite(resultadoCostos.corteMl) || resultadoCostos.corteMl < 0){
+      if(typeof resultadoCostos.corteMl !== 'number' || !Number.isFinite(resultadoCostos.corteMl) || resultadoCostos.corteMl < 0){
         errores.push(crearError('CANTIDAD_TECNICA_CORTE_INVALIDA', 'El metraje tecnico de corte no es valido.'));
+      }else if(resultadoCostos.corteMl === 0){
+        precioCorte = 0;
+      }else if(typeof corte.precioVentaCorteMetro !== 'number' || !Number.isFinite(corte.precioVentaCorteMetro) || corte.precioVentaCorteMetro < 0){
+        errores.push(crearError('PRECIO_VENTA_CORTE_INVALIDO', 'precioVentaCorteMetro debe ser un numero finito no negativo.'));
       }else{
         precioCorte = resultadoCostos.corteMl * corte.precioVentaCorteMetro;
       }
     }else if(corte.modo === 'corte'){
-      if(typeof corte.precioVentaCorte !== 'number' || !Number.isFinite(corte.precioVentaCorte) || corte.precioVentaCorte < 0){
-        errores.push(crearError('PRECIO_VENTA_CORTE_INVALIDO', 'precioVentaCorte debe ser un numero finito no negativo.'));
-      }else if(typeof resultadoCostos.cortes !== 'number' || !Number.isFinite(resultadoCostos.cortes) || resultadoCostos.cortes < 0){
+      if(typeof resultadoCostos.cortes !== 'number' || !Number.isFinite(resultadoCostos.cortes) || resultadoCostos.cortes < 0){
         errores.push(crearError('CANTIDAD_TECNICA_CORTE_INVALIDA', 'La cantidad tecnica de cortes no es valida.'));
+      }else if(resultadoCostos.cortes === 0){
+        precioCorte = 0;
+      }else if(typeof corte.precioVentaCorte !== 'number' || !Number.isFinite(corte.precioVentaCorte) || corte.precioVentaCorte < 0){
+        errores.push(crearError('PRECIO_VENTA_CORTE_INVALIDO', 'precioVentaCorte debe ser un numero finito no negativo.'));
       }else{
         precioCorte = resultadoCostos.cortes * corte.precioVentaCorte;
       }
