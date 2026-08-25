@@ -57,7 +57,11 @@ function crearEscenario(){
     modoPrecioCortePorMetro:{checked:false},
     precioVentaCorte:{value:'0'},
     precioVentaCorteMetro:{value:''},
-    precioCorteMetro:{value:'0'}
+    precioCorteMetro:{value:'0'},
+    incluirCostoCorteRentabilidad:{checked:true},
+    incluirPrecioCorteRentabilidad:{checked:true},
+    incluirCostoTapacantoRentabilidad:{checked:true},
+    incluirPrecioTapacantoRentabilidad:{checked:true}
   };
   const state = {
     ultimoCosto:crearResultadoCostos(),
@@ -215,8 +219,10 @@ probar('rutas fallidas de recalcular invalidan Profitability', () => {
     main.indexOf('const costosAplicados = aplicarResultadoCostos({'),
     main.indexOf('return costosAplicados;', main.indexOf('const costosAplicados = aplicarResultadoCostos({'))
   );
-  assert.ok(preparacionFallida.includes('actualizarResultadoRentabilidad();'));
-  assert.ok(aplicacionCostos.includes('}else{\n      actualizarResultadoRentabilidad();'));
+  assert.ok(preparacionFallida.includes('actualizarResultadoRentabilidad('));
+  assert.ok(aplicacionCostos.includes('}else{\n      actualizarResultadoRentabilidad('));
+  assert.ok(preparacionFallida.includes('leerPoliticaRentabilidadDesdeDOM()'));
+  assert.ok(aplicacionCostos.includes('leerPoliticaRentabilidadDesdeDOM()'));
   assert.ok(!preparacionFallida.includes('state.ultimoCosto'));
 });
 

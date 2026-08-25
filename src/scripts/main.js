@@ -4577,7 +4577,11 @@
       state.boards = [];
       state.ultimoReporte = null;
       if(preparacion.etapa !== 'piezas') state.ultimoTotal = 0;
-      actualizarResultadoRentabilidad();
+      actualizarResultadoRentabilidad(
+        undefined,
+        undefined,
+        leerPoliticaRentabilidadDesdeDOM()
+      );
       return false;
     }
     const parametrosCorte = preparacion.parametrosCorteProyecto;
@@ -4740,7 +4744,11 @@
       mostrarResumenCostos(state.ultimoCosto);
       actualizarPrecioCatalogoVisible();
     }else{
-      actualizarResultadoRentabilidad();
+      actualizarResultadoRentabilidad(
+        undefined,
+        undefined,
+        leerPoliticaRentabilidadDesdeDOM()
+      );
     }
     return costosAplicados;
   }
@@ -4785,6 +4793,15 @@
   document.getElementById('modoPrecioCortePorMetro').addEventListener('change', recalcularDebounced);
   document.getElementById('corteGuillotina').addEventListener('change', recalcularDebounced);
   document.getElementById('redondearTapacanto').addEventListener('change', recalcularDebounced);
+  [
+    'incluirCostoCorteRentabilidad',
+    'incluirPrecioCorteRentabilidad',
+    'incluirCostoTapacantoRentabilidad',
+    'incluirPrecioTapacantoRentabilidad'
+  ].forEach(id => {
+    document.getElementById(id).addEventListener('change', actualizarRentabilidadPorPolitica);
+  });
+  document.getElementById('toggleServiciosRentabilidad').addEventListener('change', actualizarServiciosRentabilidad);
   document.getElementById('nivelOptimizacionNormal').addEventListener('change', recalcularDebounced);
   document.getElementById('nivelOptimizacionOptimizada').addEventListener('change', recalcularDebounced);
   document.getElementById('nivelOptimizacionCompleta').addEventListener('change', recalcularDebounced);
@@ -5549,13 +5566,63 @@
   let ultimoResultadoPreciosVisible = null;
   let ultimoResultadoRentabilidadVisible = null;
 
-  function actualizarResultadoRentabilidad(resultadoCostos, resultadoPrecios){
+  function leerPoliticaRentabilidadDesdeDOM(){
+    return {
+      incluirCostoCorte:document.getElementById('incluirCostoCorteRentabilidad').checked,
+      incluirPrecioCorte:document.getElementById('incluirPrecioCorteRentabilidad').checked,
+      incluirCostoTapacanto:document.getElementById('incluirCostoTapacantoRentabilidad').checked,
+      incluirPrecioTapacanto:document.getElementById('incluirPrecioTapacantoRentabilidad').checked
+    };
+  }
+
+  function actualizarResultadoRentabilidad(
+    resultadoCostos,
+    resultadoPrecios,
+    politicaRentabilidad
+  ){
     const resultado = ProyCutProjectProfitability.calcularRentabilidadDelProyecto({
       resultadoCostos,
-      resultadoPrecios
+      resultadoPrecios,
+      politicaRentabilidad
     });
     ultimoResultadoRentabilidadVisible = resultado.resultadoRentabilidad;
     return resultado;
+  }
+
+  function actualizarRentabilidadPorPolitica(){
+    sincronizarToggleServiciosRentabilidad();
+    return actualizarResultadoRentabilidad(
+      state.ultimoCosto,
+      ultimoResultadoPreciosVisible,
+      leerPoliticaRentabilidadDesdeDOM()
+    );
+  }
+
+  function sincronizarToggleServiciosRentabilidad(){
+    const valores = Object.values(leerPoliticaRentabilidadDesdeDOM());
+    const toggle = document.getElementById('toggleServiciosRentabilidad');
+    const todosActivos = valores.every(valor => valor === true);
+    const todosInactivos = valores.every(valor => valor === false);
+    toggle.checked = todosActivos;
+    toggle.indeterminate = !todosActivos && !todosInactivos;
+  }
+
+  function actualizarServiciosRentabilidad(){
+    const toggle = document.getElementById('toggleServiciosRentabilidad');
+    [
+      'incluirCostoCorteRentabilidad',
+      'incluirPrecioCorteRentabilidad',
+      'incluirCostoTapacantoRentabilidad',
+      'incluirPrecioTapacantoRentabilidad'
+    ].forEach(id => {
+      document.getElementById(id).checked = toggle.checked;
+    });
+    toggle.indeterminate = false;
+    return actualizarResultadoRentabilidad(
+      state.ultimoCosto,
+      ultimoResultadoPreciosVisible,
+      leerPoliticaRentabilidadDesdeDOM()
+    );
   }
 
   function claseTotalResumen(){
@@ -5808,7 +5875,11 @@
   function actualizarPrecioCatalogoVisible(){
     if(!state.ultimoCosto){
       limpiarResumenPrecios();
-      actualizarResultadoRentabilidad();
+      actualizarResultadoRentabilidad(
+        undefined,
+        undefined,
+        leerPoliticaRentabilidadDesdeDOM()
+      );
       document.getElementById('estadoPrecioCatalogo').textContent =
         'Calcula primero los costos del proyecto.';
       return false;
@@ -5828,7 +5899,8 @@
     });
     actualizarResultadoRentabilidad(
       state.ultimoCosto,
-      resultadoPrecio.resultadoPrecios
+      resultadoPrecio.resultadoPrecios,
+      leerPoliticaRentabilidadDesdeDOM()
     );
     if(!resultadoPrecio.ok){
       if(resultadoPrecio.resultadoPrecios){

@@ -136,7 +136,11 @@ probar('COSTOS 4 x 700 y PRECIOS 4 x 1000 conservan identidad y cantidad', () =>
     modoPrecioCortePorMetro:{checked:false},
     precioCorteMetro:{value:'20'},
     precioVentaCorte:{value:'0'},
-    precioVentaCorteMetro:{value:''}
+    precioVentaCorteMetro:{value:''},
+    incluirCostoCorteRentabilidad:{checked:true},
+    incluirPrecioCorteRentabilidad:{checked:true},
+    incluirCostoTapacantoRentabilidad:{checked:true},
+    incluirPrecioTapacantoRentabilidad:{checked:true}
   };
   const resultadoCostos = {
     costoMateriales:2800,
