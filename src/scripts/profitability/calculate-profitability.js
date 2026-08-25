@@ -8,6 +8,19 @@ const ProyCutProfitability = (function(){
     'precioCorte',
     'precioTapacanto'
   ];
+  const CAMPOS_COSTO = [
+    'costoMateriales',
+    'costoComponentes',
+    'costoCorte',
+    'costoTapacanto',
+    'costoTotal'
+  ];
+  const POLITICA_POR_DEFECTO = Object.freeze({
+    incluirCostoCorte:true,
+    incluirPrecioCorte:true,
+    incluirCostoTapacanto:true,
+    incluirPrecioTapacanto:true
+  });
 
   function crearMensaje(codigo, mensaje){
     return {codigo, mensaje};
@@ -25,6 +38,8 @@ const ProyCutProfitability = (function(){
         costoTotal:null,
         precioTotal:null,
         precioDisponible:null,
+        costoConsiderado:null,
+        precioConsiderado:null,
         utilidad:null,
         markupPorcentaje:null,
         margenPorcentaje:null,
@@ -34,17 +49,47 @@ const ProyCutProfitability = (function(){
     };
   }
 
-  function calcularRentabilidadProyecto({resultadoCostos, resultadoPrecios} = {}){
+  function resolverPoliticaRentabilidad(politicaRentabilidad){
+    if(politicaRentabilidad === undefined) return {ok:true, politica:{...POLITICA_POR_DEFECTO}};
+    if(
+      !politicaRentabilidad ||
+      typeof politicaRentabilidad !== 'object' ||
+      Array.isArray(politicaRentabilidad)
+    ){
+      return {ok:false};
+    }
+    const politica = {...POLITICA_POR_DEFECTO};
+    const camposInvalidos = Object.keys(POLITICA_POR_DEFECTO).filter(campo => {
+      if(!Object.prototype.hasOwnProperty.call(politicaRentabilidad, campo)) return false;
+      if(typeof politicaRentabilidad[campo] !== 'boolean') return true;
+      politica[campo] = politicaRentabilidad[campo];
+      return false;
+    });
+    return camposInvalidos.length > 0 ? {ok:false} : {ok:true, politica};
+  }
+
+  function calcularRentabilidadProyecto({
+    resultadoCostos,
+    resultadoPrecios,
+    politicaRentabilidad
+  } = {}){
     const errores = [];
+    const politicaResuelta = resolverPoliticaRentabilidad(politicaRentabilidad);
+    if(!politicaResuelta.ok){
+      errores.push(crearMensaje(
+        'POLITICA_RENTABILIDAD_INVALIDA',
+        'PoliticaRentabilidad debe contener exclusivamente valores booleanos para sus flags conocidos.'
+      ));
+    }
     if(
       !resultadoCostos ||
       typeof resultadoCostos !== 'object' ||
       Array.isArray(resultadoCostos) ||
-      !esImporteValido(resultadoCostos.costoTotal)
+      CAMPOS_COSTO.some(campo => !esImporteValido(resultadoCostos[campo]))
     ){
       errores.push(crearMensaje(
         'RESULTADO_COSTOS_INVALIDO',
-        'ResultadoCostos debe incluir un costoTotal finito no negativo.'
+        'ResultadoCostos debe incluir subtotales canonicos y costoTotal finitos no negativos.'
       ));
     }
 
@@ -72,16 +117,35 @@ const ProyCutProfitability = (function(){
 
     if(errores.length > 0) return crearResultadoInvalido(errores);
 
+    const politica = politicaResuelta.politica;
     const costoTotal = resultadoCostos.costoTotal;
-    const precioCompleto = CAMPOS_PRECIO.every(campo => esImporteValido(resultadoPrecios[campo]));
+    const costoConsiderado =
+      resultadoCostos.costoMateriales +
+      resultadoCostos.costoComponentes +
+      (politica.incluirCostoCorte ? resultadoCostos.costoCorte : 0) +
+      (politica.incluirCostoTapacanto ? resultadoCostos.costoTapacanto : 0);
+    const camposPrecioParticipantes = [
+      'precioMateriales',
+      'precioComponentes',
+      ...(politica.incluirPrecioCorte ? ['precioCorte'] : []),
+      ...(politica.incluirPrecioTapacanto ? ['precioTapacanto'] : [])
+    ];
+    const precioCompleto = camposPrecioParticipantes.every(campo => (
+      esImporteValido(resultadoPrecios[campo])
+    ));
     if(!precioCompleto){
+      const precioDisponible = camposPrecioParticipantes
+        .filter(campo => esImporteValido(resultadoPrecios[campo]))
+        .reduce((total, campo) => total + resultadoPrecios[campo], 0);
       return {
         ok:true,
         resultadoRentabilidad:{
           estado:ESTADO_PRECIO_PARCIAL,
           costoTotal,
           precioTotal:null,
-          precioDisponible:resultadoPrecios.precioTotal,
+          precioDisponible,
+          costoConsiderado,
+          precioConsiderado:null,
           utilidad:null,
           markupPorcentaje:null,
           margenPorcentaje:null,
@@ -94,27 +158,29 @@ const ProyCutProfitability = (function(){
     }
 
     const precioTotal = resultadoPrecios.precioTotal;
-    const utilidad = precioTotal - costoTotal;
+    const precioConsiderado = camposPrecioParticipantes
+      .reduce((total, campo) => total + resultadoPrecios[campo], 0);
+    const utilidad = precioConsiderado - costoConsiderado;
     const advertencias = [];
     let markupPorcentaje = null;
     let margenPorcentaje = null;
 
-    if(costoTotal === 0){
+    if(costoConsiderado === 0){
       advertencias.push(crearMensaje(
         'MARKUP_INDEFINIDO_COSTO_CERO',
         'El markup no puede calcularse cuando el costo total es cero.'
       ));
     }else{
-      markupPorcentaje = (utilidad / costoTotal) * 100;
+      markupPorcentaje = (utilidad / costoConsiderado) * 100;
     }
 
-    if(precioTotal === 0){
+    if(precioConsiderado === 0){
       advertencias.push(crearMensaje(
         'MARGEN_INDEFINIDO_PRECIO_CERO',
         'El margen no puede calcularse cuando el precio total es cero.'
       ));
     }else{
-      margenPorcentaje = (utilidad / precioTotal) * 100;
+      margenPorcentaje = (utilidad / precioConsiderado) * 100;
     }
 
     return {
@@ -124,6 +190,8 @@ const ProyCutProfitability = (function(){
         costoTotal,
         precioTotal,
         precioDisponible:null,
+        costoConsiderado,
+        precioConsiderado,
         utilidad,
         markupPorcentaje,
         margenPorcentaje,

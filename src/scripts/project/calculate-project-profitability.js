@@ -1,11 +1,13 @@
 const ProyCutProjectProfitability = (function(){
   function calcularRentabilidadDelProyecto({
     resultadoCostos,
-    resultadoPrecios
+    resultadoPrecios,
+    politicaRentabilidad
   } = {}){
     return ProyCutProfitability.calcularRentabilidadProyecto({
       resultadoCostos,
-      resultadoPrecios
+      resultadoPrecios,
+      politicaRentabilidad
     });
   }
 
