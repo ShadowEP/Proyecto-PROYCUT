@@ -487,6 +487,35 @@
         <label for="redondearTapacanto" style="margin:0;" title="Al activarlo, el metraje de cada tipo de tapacanto se redondea hacia arriba al siguiente 0.5 m (ej. 7.1 m se cobra como 7.5 m, y 7.6 m se cobra como 8 m), para no comprar de menos.">Redondear metraje de tapacanto a 0.5 m</label>
       </div>
     </div>
+
+    <div class="config-sub">Política de rentabilidad (Ganancias)</div>
+    <div class="config-row">
+      <div class="config-field" style="flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="toggleServiciosRentabilidad" checked>
+        <label for="toggleServiciosRentabilidad" style="margin:0;">Incluir costos y precios de servicios</label>
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="config-field" style="flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="incluirCostoCorteRentabilidad" checked>
+        <label for="incluirCostoCorteRentabilidad" style="margin:0;">Incluir costo de corte</label>
+      </div>
+      <div class="config-field" style="flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="incluirPrecioCorteRentabilidad" checked>
+        <label for="incluirPrecioCorteRentabilidad" style="margin:0;">Incluir precio de corte</label>
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="config-field" style="flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="incluirCostoTapacantoRentabilidad" checked>
+        <label for="incluirCostoTapacantoRentabilidad" style="margin:0;">Incluir costo de enchapado / tapacanto</label>
+      </div>
+      <div class="config-field" style="flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="incluirPrecioTapacantoRentabilidad" checked>
+        <label for="incluirPrecioTapacantoRentabilidad" style="margin:0;">Incluir precio de enchapado / tapacanto</label>
+      </div>
+    </div>
+    <p class="sub" style="margin:2px 0 0;">Estas opciones solo cambian la base de cálculo de Ganancias. Los conceptos permanecen completos en COSTOS y PRECIOS.</p>
     </div>
 
     <div class="btn-row panel-guardar-row" style="justify-content:flex-end;">
