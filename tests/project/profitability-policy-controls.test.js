@@ -37,6 +37,17 @@ function crearControl(checked){
   };
 }
 
+function crearCampoNumerico(valor, disabled){
+  return {
+    value:valor,
+    disabled:Boolean(disabled),
+    listeners:{},
+    addEventListener(tipo, listener){
+      this.listeners[tipo] = listener;
+    }
+  };
+}
+
 function crearResultadoCostos(){
   return {
     costoMateriales:1000,
@@ -68,6 +79,9 @@ function crearEscenario(){
     precioVentaCorte:{value:'20'},
     precioVentaCorteMetro:{value:''},
     precioCorteMetro:{value:'0'},
+    usarUtilidadGlobalProyecto:crearControl(false),
+    porcentajeUtilidadGlobalProyecto:crearCampoNumerico('30', true),
+    avisoRentabilidadPrecioGlobal:{hidden:true},
     toggleServiciosRentabilidad:crearControl(true)
   };
   idsPolitica.forEach(id => {
@@ -108,10 +122,10 @@ function crearEscenario(){
     `${leer('src/scripts/project/calculate-project-price.js')}\n` +
     `${leer('src/scripts/profitability/calculate-profitability.js')}\n` +
     `${leer('src/scripts/project/calculate-project-profitability.js')}\n` +
-    `const calcularPrecioCatalogoReal = ProyCutProjectPricing.calcularPrecioCatalogoProyecto;\n` +
-    `ProyCutProjectPricing.calcularPrecioCatalogoProyecto = function(entrada){\n` +
+    `const calcularPrecioDelProyectoReal = ProyCutProjectPricing.calcularPrecioDelProyecto;\n` +
+    `ProyCutProjectPricing.calcularPrecioDelProyecto = function(entrada){\n` +
     `  llamadasPricing++;\n` +
-    `  return calcularPrecioCatalogoReal(entrada);\n` +
+    `  return calcularPrecioDelProyectoReal(entrada);\n` +
     `};\n` +
     `const calcularRentabilidadReal = ProyCutProjectProfitability.calcularRentabilidadDelProyecto;\n` +
     `ProyCutProjectProfitability.calcularRentabilidadDelProyecto = function(entrada){\n` +

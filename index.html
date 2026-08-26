@@ -516,6 +516,7 @@
       </div>
     </div>
     <p class="sub" style="margin:2px 0 0;">Estas opciones solo cambian la base de cálculo de Ganancias. Los conceptos permanecen completos en COSTOS y PRECIOS.</p>
+    <p class="sub" id="avisoRentabilidadPrecioGlobal" style="margin:2px 0 0;" hidden>En precio global no existe desglose de precio por servicio.</p>
     </div>
 
     <div class="btn-row panel-guardar-row" style="justify-content:flex-end;">
@@ -708,6 +709,19 @@
           <div id="reporteContenido" hidden></div>
         </div>
         <div id="preciosProyectoPanel" role="tabpanel" aria-labelledby="mostrarPreciosProyecto" hidden>
+          <div class="config-sub">Utilidad global del proyecto</div>
+          <div class="config-row">
+            <div class="config-field" style="flex-direction:row; align-items:center; gap:8px;">
+              <input type="checkbox" id="usarUtilidadGlobalProyecto">
+              <label for="usarUtilidadGlobalProyecto" style="margin:0;">Aplicar utilidad global al proyecto</label>
+            </div>
+          </div>
+          <div class="config-row">
+            <div class="config-field">
+              <label for="porcentajeUtilidadGlobalProyecto">Utilidad sobre costo (%)</label>
+              <input type="number" id="porcentajeUtilidadGlobalProyecto" value="30" step="any" disabled>
+            </div>
+          </div>
           <div id="resumenPreciosContenido"></div>
           <p class="sub" id="estadoPrecioCatalogo" style="margin:8px 0 14px;" aria-live="polite">Completa los precios comerciales para ver el precio de venta.</p>
         </div>

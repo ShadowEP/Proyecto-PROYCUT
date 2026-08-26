@@ -58,6 +58,8 @@ function crearEscenario(){
     precioVentaCorte:{value:'0'},
     precioVentaCorteMetro:{value:''},
     precioCorteMetro:{value:'0'},
+    usarUtilidadGlobalProyecto:{checked:false},
+    porcentajeUtilidadGlobalProyecto:{value:'30'},
     incluirCostoCorteRentabilidad:{checked:true},
     incluirPrecioCorteRentabilidad:{checked:true},
     incluirCostoTapacantoRentabilidad:{checked:true},
@@ -91,10 +93,10 @@ function crearEscenario(){
     `${leer(rutas.pricingCasoUso)}\n` +
     `${leer(rutas.profitability)}\n` +
     `${leer(rutas.profitabilityCasoUso)}\n` +
-    `const calcularPrecioCatalogoReal = ProyCutProjectPricing.calcularPrecioCatalogoProyecto;\n` +
-    `ProyCutProjectPricing.calcularPrecioCatalogoProyecto = function(entrada){\n` +
+    `const calcularPrecioDelProyectoReal = ProyCutProjectPricing.calcularPrecioDelProyecto;\n` +
+    `ProyCutProjectPricing.calcularPrecioDelProyecto = function(entrada){\n` +
     `  llamadasPricing++;\n` +
-    `  return calcularPrecioCatalogoReal(entrada);\n` +
+    `  return calcularPrecioDelProyectoReal(entrada);\n` +
     `};\n` +
     `const calcularRentabilidadReal = ProyCutProjectProfitability.calcularRentabilidadDelProyecto;\n` +
     `ProyCutProjectProfitability.calcularRentabilidadDelProyecto = function(entrada){\n` +
@@ -229,7 +231,7 @@ probar('rutas fallidas de recalcular invalidan Profitability', () => {
 probar('no duplica Costing ni Pricing', () => {
   assert.strictEqual(contar(main, 'const resultadoCostos = calcularCostosProyecto({'), 1);
   assert.strictEqual(
-    contar(main, 'ProyCutProjectPricing.calcularPrecioCatalogoProyecto({'),
+    contar(main, 'ProyCutProjectPricing.calcularPrecioDelProyecto({'),
     1
   );
 });

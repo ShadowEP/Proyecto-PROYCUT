@@ -4802,6 +4802,11 @@
     document.getElementById(id).addEventListener('change', actualizarRentabilidadPorPolitica);
   });
   document.getElementById('toggleServiciosRentabilidad').addEventListener('change', actualizarServiciosRentabilidad);
+  document.getElementById('usarUtilidadGlobalProyecto').addEventListener('change', () => {
+    actualizarDisponibilidadPreciosProyecto();
+    actualizarPrecioCatalogoVisible();
+  });
+  document.getElementById('porcentajeUtilidadGlobalProyecto').addEventListener('input', actualizarPrecioCatalogoVisible);
   document.getElementById('nivelOptimizacionNormal').addEventListener('change', recalcularDebounced);
   document.getElementById('nivelOptimizacionOptimizada').addEventListener('change', recalcularDebounced);
   document.getElementById('nivelOptimizacionCompleta').addEventListener('change', recalcularDebounced);
@@ -5575,6 +5580,25 @@
     };
   }
 
+  function leerPoliticaPreciosDesdeDOM(){
+    const usarGlobal = document.getElementById('usarUtilidadGlobalProyecto').checked;
+    const valorPorcentaje = document.getElementById('porcentajeUtilidadGlobalProyecto').value;
+    const porcentajeSobreCosto = valorPorcentaje === '' ? null : Number(valorPorcentaje);
+    return {
+      modo:usarGlobal ? 'GLOBAL_SOBRE_COSTO' : 'INDIVIDUAL',
+      porcentajeSobreCosto
+    };
+  }
+
+  function actualizarDisponibilidadPreciosProyecto(){
+    const usarGlobal = document.getElementById('usarUtilidadGlobalProyecto').checked;
+    document.getElementById('porcentajeUtilidadGlobalProyecto').disabled = !usarGlobal;
+    document.getElementById('incluirPrecioCorteRentabilidad').disabled = usarGlobal;
+    document.getElementById('incluirPrecioTapacantoRentabilidad').disabled = usarGlobal;
+    const aviso = document.getElementById('avisoRentabilidadPrecioGlobal');
+    if(aviso) aviso.hidden = !usarGlobal;
+  }
+
   function actualizarResultadoRentabilidad(
     resultadoCostos,
     resultadoPrecios,
@@ -5848,8 +5872,29 @@
     );
   }
 
+  function renderResumenPrecioGlobal(contenedorId, resultadoCostos, resultadoPrecios){
+    const porcentaje = resultadoPrecios.porcentajeAplicado &&
+      typeof resultadoPrecios.porcentajeAplicado.valor === 'number'
+      ? resultadoPrecios.porcentajeAplicado.valor
+      : null;
+    const contenido =
+      '<div class="config-row">' +
+      campoEconomico('Método', 'Utilidad global sobre costo') +
+      campoEconomico('Costo base', valorEconomicoPresentado(resultadoCostos && resultadoCostos.costoTotal)) +
+      campoEconomico('Utilidad sobre costo', porcentaje === null ? '—' : (fmt(porcentaje) + ' %')) +
+      '</div>' +
+      '<div class="' + claseTotalResumen() + '">' +
+      '<span class="label">Precio de venta</span>' +
+      '<span class="amount">' + valorEconomicoPresentado(resultadoPrecios.precioFinal) + '</span></div>';
+    document.getElementById(contenedorId).innerHTML = contenido;
+  }
+
   function mostrarResumenPrecios(resultadoCostos, resultadoPrecios){
     ultimoResultadoPreciosVisible = resultadoPrecios;
+    if(resultadoPrecios && resultadoPrecios.metodoAplicado === 'GLOBAL_SOBRE_COSTO'){
+      renderResumenPrecioGlobal('resumenPreciosContenido', resultadoCostos, resultadoPrecios);
+      return;
+    }
     renderResumenEconomico(
       'resumenPreciosContenido',
       resultadoPrecios ? construirResumenPrecios(resultadoCostos, resultadoPrecios) : null,
@@ -5884,7 +5929,8 @@
         'Calcula primero los costos del proyecto.';
       return false;
     }
-    const resultadoPrecio = ProyCutProjectPricing.calcularPrecioCatalogoProyecto({
+    const politicaPrecios = leerPoliticaPreciosDesdeDOM();
+    const resultadoPrecio = ProyCutProjectPricing.calcularPrecioDelProyecto({
       resultadoCostos:state.ultimoCosto,
       catalogoComercial:{
         materiales:state.materiales,
@@ -5895,7 +5941,8 @@
           precioVentaCorte:leerPrecioComercial('precioVentaCorte'),
           precioVentaCorteMetro:leerPrecioComercial('precioVentaCorteMetro')
         }
-      }
+      },
+      politicaPrecios
     });
     actualizarResultadoRentabilidad(
       state.ultimoCosto,
@@ -5915,7 +5962,9 @@
     const precios = resultadoPrecio.resultadoPrecios;
     mostrarResumenPrecios(state.ultimoCosto, precios);
     document.getElementById('estadoPrecioCatalogo').textContent =
-      'Precio automático calculado con el catálogo comercial.';
+      politicaPrecios.modo === 'GLOBAL_SOBRE_COSTO'
+        ? 'Precio calculado con utilidad global sobre el costo del proyecto.'
+        : 'Precio automático calculado con el catálogo comercial.';
     return true;
   }
 
