@@ -231,9 +231,17 @@ probar('22. la formula de descuento existe una unica vez, solo en calculate-pric
   [rutaMain, rutaCasoUso, rutaProfitability].forEach(ruta => {
     const codigo = fs.readFileSync(ruta, 'utf8');
     assert.ok(!codigo.includes('montoDescuento'));
-    assert.ok(!codigo.includes('descuentoAplicado'));
     assert.ok(!/precioBase\s*\*\s*porcentaje/.test(codigo));
   });
+  // main.js y Application (P4B) solo transportan la politica de entrada (descuento);
+  // nunca conocen el resultado calculado por Domain (descuentoAplicado). Eso llega en P4C.
+  assert.ok(!fs.readFileSync(rutaMain, 'utf8').includes('descuentoAplicado'));
+  assert.ok(!fs.readFileSync(rutaCasoUso, 'utf8').includes('descuentoAplicado'));
+  // Profitability (P4B) SI necesita detectar la forma de descuentoAplicado para decidir
+  // precioConsiderado, pero nunca debe leer su monto ni su porcentaje (no calcula descuento).
+  const codigoProfitability = fs.readFileSync(rutaProfitability, 'utf8');
+  assert.ok(!/descuentoAplicado\.monto/.test(codigoProfitability));
+  assert.ok(!/descuentoAplicado\.porcentaje/.test(codigoProfitability));
 });
 
 probar('funcion exportada para uso directo en tests', () => {

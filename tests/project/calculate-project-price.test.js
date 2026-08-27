@@ -251,4 +251,71 @@ probar('Application no contiene formula global ni redondeo', () => {
   assert.ok(!codigoCasoUso.includes('costoTotal *'));
   assert.ok(!codigoCasoUso.includes('Math.round'));
   assert.ok(!codigoCasoUso.includes('toFixed'));
+  assert.ok(!/precioBase\s*\*\s*porcentaje/.test(codigoCasoUso));
+  assert.ok(!codigoCasoUso.includes('montoDescuento'));
+});
+
+// ---------- P4B: politicaPrecios.descuento ----------
+
+probar('politicaPrecios sin descuento no agrega la clave descuento al contexto CATALOGO', () => {
+  const resultadoAdapter = {ok:true, resultadoPrecios:{precioTotal:1406}};
+  const escenario = crearEscenario(resultadoAdapter);
+  const catalogoComercial = {materiales:[], componentes:[], tapacantos:[], corte:{}};
+
+  escenario.casoUsoPruebas.calcularPrecioDelProyecto({
+    resultadoCostos:crearResultadoCostos(),
+    catalogoComercial,
+    politicaPrecios:{modo:'INDIVIDUAL'}
+  });
+
+  assert.ok(!Object.prototype.hasOwnProperty.call(
+    escenario.llamadasAdapter[0].contextoComercial,
+    'descuento'
+  ));
+});
+
+probar('politicaPrecios sin descuento no agrega la clave descuento al contexto GLOBAL', () => {
+  const resultadoAdapter = {ok:true, resultadoPrecios:{precioFinal:800}};
+  const escenario = crearEscenario(resultadoAdapter);
+
+  escenario.casoUsoPruebas.calcularPrecioDelProyecto({
+    resultadoCostos:crearResultadoCostos(),
+    politicaPrecios:{modo:'GLOBAL_SOBRE_COSTO', porcentajeSobreCosto:0}
+  });
+
+  assert.ok(!Object.prototype.hasOwnProperty.call(
+    escenario.llamadasAdapter[0].contextoComercial,
+    'descuento'
+  ));
+});
+
+probar('INDIVIDUAL + descuento explicito se transporta sin transformar al contexto CATALOGO', () => {
+  const resultadoAdapter = {ok:true, resultadoPrecios:{precioTotal:1406}};
+  const escenario = crearEscenario(resultadoAdapter);
+  const catalogoComercial = {materiales:[], componentes:[], tapacantos:[], corte:{}};
+  const descuento = Object.freeze({tipo:'PORCENTAJE', porcentaje:10});
+
+  escenario.casoUsoPruebas.calcularPrecioDelProyecto({
+    resultadoCostos:crearResultadoCostos(),
+    catalogoComercial,
+    politicaPrecios:{modo:'INDIVIDUAL', descuento}
+  });
+
+  assert.strictEqual(escenario.llamadasAdapter.length, 1);
+  assert.strictEqual(escenario.llamadasAdapter[0].contextoComercial.descuento, descuento);
+});
+
+probar('GLOBAL + descuento explicito se transporta sin transformar al contexto GLOBAL', () => {
+  const resultadoAdapter = {ok:true, resultadoPrecios:{precioFinal:11700}};
+  const escenario = crearEscenario(resultadoAdapter);
+  const descuento = Object.freeze({tipo:'PORCENTAJE', porcentaje:10});
+
+  escenario.casoUsoPruebas.calcularPrecioDelProyecto({
+    resultadoCostos:crearResultadoCostos(),
+    politicaPrecios:{modo:'GLOBAL_SOBRE_COSTO', porcentajeSobreCosto:30, descuento}
+  });
+
+  assert.strictEqual(escenario.llamadasAdapter.length, 1);
+  assert.strictEqual(escenario.llamadasAdapter[0].contextoComercial.porcentajeSobreCosto, 30);
+  assert.strictEqual(escenario.llamadasAdapter[0].contextoComercial.descuento, descuento);
 });

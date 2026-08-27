@@ -504,3 +504,161 @@ probar('el dominio no depende de productores ni plataforma', () => {
   ['ProyCutCosting', 'ProyCutPricing', 'document.', 'window.', 'localStorage', 'fetch(']
     .forEach(identificador => assert.ok(!codigoModulo.includes(identificador)));
 });
+
+// ---------- P4B: precioConsiderado con descuento agregado en INDIVIDUAL/CATALOGO ----------
+
+function crearResultadoPreciosConDescuento(precioBase, porcentaje, overrides = {}){
+  const monto = precioBase * porcentaje / 100;
+  return {
+    precioMateriales:800,
+    precioComponentes:0,
+    precioCorte:200,
+    precioTapacanto:0,
+    precioBase,
+    descuentoAplicado:{tipo:'PORCENTAJE', porcentaje, monto},
+    precioFinal:precioBase - monto,
+    precioTotal:precioBase - monto,
+    ...overrides
+  };
+}
+
+function costosCasoAuditado(){
+  return crearResultadoCostos({
+    costoMateriales:500,
+    costoComponentes:0,
+    costoCorte:100,
+    costoTapacanto:0,
+    costoTotal:600
+  });
+}
+
+probar('A. INDIVIDUAL sin descuento + excluir corte conserva exactamente el comportamiento historico', () => {
+  const resultado = calcularRentabilidadProyecto({
+    resultadoCostos:crearResultadoCostos(),
+    resultadoPrecios:crearResultadoPrecios(),
+    politicaRentabilidad:{incluirPrecioCorte:false}
+  }).resultadoRentabilidad;
+  assert.strictEqual(resultado.estado, 'PRECIO_COMPLETO');
+  assert.strictEqual(resultado.precioConsiderado, 1000);
+});
+
+probar('B. caso auditado: INDIVIDUAL con descuento 10% usa precioFinal como precioConsiderado, no distribuye por categoria', () => {
+  const resultadoPrecios = crearResultadoPreciosConDescuento(1000, 10);
+  assert.strictEqual(resultadoPrecios.precioFinal, 900);
+
+  const resultado = calcularRentabilidadProyecto({
+    resultadoCostos:costosCasoAuditado(),
+    resultadoPrecios,
+    politicaRentabilidad:{incluirPrecioCorte:false}
+  }).resultadoRentabilidad;
+
+  assert.strictEqual(resultado.estado, 'PRECIO_COMPLETO');
+  assert.strictEqual(resultado.precioConsiderado, 900);
+  assert.notStrictEqual(resultado.precioConsiderado, 800);
+  assert.notStrictEqual(resultado.precioConsiderado, 720);
+  assert.notStrictEqual(resultado.precioConsiderado, 700);
+});
+
+probar('C. costoConsiderado sigue respetando incluirCostoCorte aunque el descuento este activo', () => {
+  const resultadoPrecios = crearResultadoPreciosConDescuento(1000, 10);
+  const resultadoCostos = costosCasoAuditado();
+
+  const conCosto = calcularRentabilidadProyecto({
+    resultadoCostos,
+    resultadoPrecios,
+    politicaRentabilidad:{incluirCostoCorte:true, incluirPrecioCorte:false}
+  }).resultadoRentabilidad;
+  const sinCosto = calcularRentabilidadProyecto({
+    resultadoCostos,
+    resultadoPrecios,
+    politicaRentabilidad:{incluirCostoCorte:false, incluirPrecioCorte:false}
+  }).resultadoRentabilidad;
+
+  assert.strictEqual(conCosto.costoConsiderado, 600);
+  assert.strictEqual(sinCosto.costoConsiderado, 500);
+  assert.strictEqual(conCosto.precioConsiderado, 900);
+  assert.strictEqual(sinCosto.precioConsiderado, 900);
+});
+
+probar('D. descuento PORCENTAJE 0% explicito sigue contando como descuento activo (sin truthiness)', () => {
+  const resultadoPrecios = crearResultadoPreciosConDescuento(1000, 0);
+  assert.deepStrictEqual(plano(resultadoPrecios.descuentoAplicado), {tipo:'PORCENTAJE', porcentaje:0, monto:0});
+  assert.strictEqual(resultadoPrecios.precioFinal, 1000);
+
+  const resultado = calcularRentabilidadProyecto({
+    resultadoCostos:costosCasoAuditado(),
+    resultadoPrecios,
+    politicaRentabilidad:{incluirPrecioCorte:false}
+  }).resultadoRentabilidad;
+
+  // Si se usara truthiness sobre monto/porcentaje (ambos 0), caeria en el camino historico
+  // (materiales+componentes sin corte = 800). El contrato exige precioFinal (1000).
+  assert.strictEqual(resultado.precioConsiderado, 1000);
+  assert.notStrictEqual(resultado.precioConsiderado, 800);
+});
+
+probar('distingue campo ausente, descuentoAplicado:null y descuento real sin usar truthiness', () => {
+  const base = () => crearResultadoPrecios({
+    precioMateriales:800,
+    precioComponentes:0,
+    precioCorte:200,
+    precioTapacanto:0,
+    precioTotal:1000
+  });
+  const costos = crearResultadoCostos();
+
+  const ausente = calcularRentabilidadProyecto({
+    resultadoCostos:costos,
+    resultadoPrecios:base()
+  }).resultadoRentabilidad;
+
+  const nulo = calcularRentabilidadProyecto({
+    resultadoCostos:costos,
+    resultadoPrecios:{...base(), descuentoAplicado:null}
+  }).resultadoRentabilidad;
+
+  const real = calcularRentabilidadProyecto({
+    resultadoCostos:costos,
+    resultadoPrecios:{...base(), descuentoAplicado:{tipo:'PORCENTAJE', porcentaje:0, monto:0}, precioFinal:1000}
+  }).resultadoRentabilidad;
+
+  // ausente y null se comportan igual: precioConsiderado = suma de categorias (1000, sin exclusion)
+  assert.strictEqual(ausente.precioConsiderado, 1000);
+  assert.strictEqual(nulo.precioConsiderado, 1000);
+  // con descuento real (aunque 0%), precioConsiderado = precioFinal, mismo valor aqui pero via otra ruta
+  assert.strictEqual(real.precioConsiderado, 1000);
+
+  // Diferencia observable: si precioFinal difiere de la suma de categorias, solo "real" lo refleja.
+  const conDiferencia = calcularRentabilidadProyecto({
+    resultadoCostos:costos,
+    resultadoPrecios:{...base(), descuentoAplicado:{tipo:'PORCENTAJE', porcentaje:10, monto:100}, precioFinal:900, precioTotal:900}
+  }).resultadoRentabilidad;
+  assert.strictEqual(conDiferencia.precioConsiderado, 900);
+});
+
+probar('E. caso obligatorio GLOBAL + descuento: costo 10000, base 13000, descuento 10%, final 11700', () => {
+  const resultadoPrecios = crearResultadoPreciosGlobal(11700, {
+    precioBase:13000,
+    descuentoAplicado:{tipo:'PORCENTAJE', porcentaje:10, monto:1300}
+  });
+  const resultado = calcularRentabilidadProyecto({
+    resultadoCostos:crearResultadoCostos({
+      costoMateriales:6000,
+      costoComponentes:2000,
+      costoCorte:1500,
+      costoTapacanto:500,
+      costoTotal:10000
+    }),
+    resultadoPrecios
+  }).resultadoRentabilidad;
+
+  assert.strictEqual(resultado.costoTotal, 10000);
+  assert.strictEqual(resultado.costoConsiderado, 10000);
+  assert.strictEqual(resultado.precioTotal, 11700);
+  assert.strictEqual(resultado.precioConsiderado, 11700);
+  assert.strictEqual(resultado.utilidad, 1700);
+  assert.strictEqual(resultado.markupPorcentaje, 17);
+  assert.strictEqual(resultado.margenPorcentaje, 1700 / 11700 * 100);
+  // el 30% configurado para construir precioBase NO debe aparecer como markup real
+  assert.notStrictEqual(resultado.markupPorcentaje, 30);
+});

@@ -203,19 +203,47 @@ const ProyCutPricing = (function(){
       precioCorteResultado,
       precioTapacanto
     ];
-    const precioTotal = subtotales
+    const precioTotalBruto = subtotales
       .filter(Number.isFinite)
       .reduce((total, subtotal) => total + subtotal, 0);
-    const resultadoPrecios = {
-      precioMateriales,
-      precioComponentes,
-      precioCorte:precioCorteResultado,
-      precioTapacanto,
-      precioTotal
+
+    if(errores.length > 0){
+      return {
+        ok:false,
+        errores,
+        resultadoPrecios:{
+          precioMateriales,
+          precioComponentes,
+          precioCorte:precioCorteResultado,
+          precioTapacanto,
+          precioTotal:precioTotalBruto
+        }
+      };
+    }
+
+    const precioBase = precioTotalBruto;
+    const descuento = contextoComercial.descuento !== undefined
+      ? contextoComercial.descuento
+      : DESCUENTO_NINGUNO_POR_DEFECTO;
+    const resultadoDescuento = aplicarDescuentoPrecio(precioBase, descuento);
+    if(!resultadoDescuento.ok){
+      return {ok:false, errores:resultadoDescuento.errores};
+    }
+
+    return {
+      ok:true,
+      resultadoPrecios:{
+        metodoAplicado:METODO_CATALOGO,
+        precioMateriales,
+        precioComponentes,
+        precioCorte:precioCorteResultado,
+        precioTapacanto,
+        precioBase,
+        descuentoAplicado:resultadoDescuento.descuentoAplicado,
+        precioFinal:resultadoDescuento.precioFinal,
+        precioTotal:resultadoDescuento.precioFinal
+      }
     };
-    return errores.length > 0
-      ? {ok:false, errores, resultadoPrecios}
-      : {ok:true, resultadoPrecios};
   }
 
   function validarDescuentoPorcentaje(descuento){

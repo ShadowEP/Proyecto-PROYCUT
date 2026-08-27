@@ -161,7 +161,7 @@ probar('no modifica las entradas', () => {
   assert.strictEqual(JSON.stringify(contextoComercial), contextoAntes);
 });
 
-probar('camino CATALOGO conserva exactamente su forma historica', () => {
+probar('camino CATALOGO conserva sus valores comerciales historicos bajo el contrato P4B completo', () => {
   const resultado = calcularPrecioProyecto(
     {
       costoMateriales:750,
@@ -189,10 +189,14 @@ probar('camino CATALOGO conserva exactamente su forma historica', () => {
   assert.deepStrictEqual(
     JSON.parse(JSON.stringify(resultado.resultadoPrecios)),
     {
+      metodoAplicado:'CATALOGO',
       precioMateriales:1200,
       precioComponentes:140,
       precioCorte:48,
       precioTapacanto:18,
+      precioBase:1406,
+      descuentoAplicado:null,
+      precioFinal:1406,
       precioTotal:1406
     }
   );

@@ -31,6 +31,18 @@ const ProyCutProfitability = (function(){
     return typeof valor === 'number' && Number.isFinite(valor) && valor >= 0;
   }
 
+  function tieneDescuentoRealAplicado(resultadoPrecios){
+    return Boolean(
+      resultadoPrecios &&
+      typeof resultadoPrecios === 'object' &&
+      !Array.isArray(resultadoPrecios) &&
+      Object.prototype.hasOwnProperty.call(resultadoPrecios, 'descuentoAplicado') &&
+      resultadoPrecios.descuentoAplicado !== null &&
+      typeof resultadoPrecios.descuentoAplicado === 'object' &&
+      !Array.isArray(resultadoPrecios.descuentoAplicado)
+    );
+  }
+
   function crearResultadoInvalido(errores){
     return {
       ok:false,
@@ -103,6 +115,7 @@ const ProyCutProfitability = (function(){
       preciosSonObjeto &&
       resultadoPrecios.metodoAplicado === METODO_GLOBAL_SOBRE_COSTO
     );
+    const esPrecioAgregadoFinal = esPrecioGlobal || tieneDescuentoRealAplicado(resultadoPrecios);
     const camposPrecioInvalidos = preciosSonObjeto && !esPrecioGlobal
       ? CAMPOS_PRECIO.filter(campo => (
         resultadoPrecios[campo] !== null &&
@@ -170,7 +183,7 @@ const ProyCutProfitability = (function(){
     const precioTotal = esPrecioGlobal
       ? resultadoPrecios.precioFinal
       : resultadoPrecios.precioTotal;
-    const precioConsiderado = esPrecioGlobal
+    const precioConsiderado = esPrecioAgregadoFinal
       ? resultadoPrecios.precioFinal
       : camposPrecioParticipantes.reduce(
         (total, campo) => total + resultadoPrecios[campo],

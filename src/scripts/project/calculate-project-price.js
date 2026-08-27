@@ -23,12 +23,16 @@ const ProyCutProjectPricing = (function(){
 
   function calcularPrecioCatalogoProyecto({
     resultadoCostos,
-    catalogoComercial
+    catalogoComercial,
+    descuento
   }){
     const contextoComercial = {
       metodo:'CATALOGO',
       catalogoComercial
     };
+    if(descuento !== undefined){
+      contextoComercial.descuento = descuento;
+    }
 
     return ProyCutPricingApplicationAdapter.calcularPrecioDesdeAplicacion({
       resultadoCostos,
@@ -65,7 +69,8 @@ const ProyCutProjectPricing = (function(){
     if(politicaPrecios.modo === MODO_INDIVIDUAL){
       return calcularPrecioCatalogoProyecto({
         resultadoCostos,
-        catalogoComercial
+        catalogoComercial,
+        descuento:politicaPrecios.descuento
       });
     }
 
@@ -74,6 +79,9 @@ const ProyCutProjectPricing = (function(){
         metodo:MODO_GLOBAL_SOBRE_COSTO,
         porcentajeSobreCosto:politicaPrecios.porcentajeSobreCosto
       };
+      if(politicaPrecios.descuento !== undefined){
+        contextoComercial.descuento = politicaPrecios.descuento;
+      }
       return ProyCutPricingApplicationAdapter.calcularPrecioDesdeAplicacion({
         resultadoCostos,
         contextoComercial
