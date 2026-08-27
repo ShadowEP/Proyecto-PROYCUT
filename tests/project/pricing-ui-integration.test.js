@@ -109,7 +109,7 @@ probar('precio de catalogo se actualiza sin accion manual', () => {
   assert.ok(!html.includes('id="calcularPrecioCatalogoProyecto"'));
   assert.ok(!html.includes('id="calcularPrecioProyecto"'));
   assert.ok(main.includes('function actualizarPrecioCatalogoVisible()'));
-  assert.ok(main.includes('ProyCutProjectPricing.calcularPrecioCatalogoProyecto'));
+  assert.ok(main.includes('ProyCutProjectPricing.calcularPrecioDelProyecto'));
   assert.ok(main.includes('if(costosAplicados)'));
   assert.ok(main.includes('actualizarPrecioCatalogoVisible();'));
 });
@@ -137,6 +137,8 @@ probar('COSTOS 4 x 700 y PRECIOS 4 x 1000 conservan identidad y cantidad', () =>
     precioCorteMetro:{value:'20'},
     precioVentaCorte:{value:'0'},
     precioVentaCorteMetro:{value:''},
+    usarUtilidadGlobalProyecto:{checked:false},
+    porcentajeUtilidadGlobalProyecto:{value:'30'},
     incluirCostoCorteRentabilidad:{checked:true},
     incluirPrecioCorteRentabilidad:{checked:true},
     incluirCostoTapacantoRentabilidad:{checked:true},
