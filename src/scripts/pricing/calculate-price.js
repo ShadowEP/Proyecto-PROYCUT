@@ -3,6 +3,9 @@ const ProyCutPricing = (function(){
   const METODO_CATALOGO = 'CATALOGO';
   const METODO_GLOBAL_SOBRE_COSTO = 'GLOBAL_SOBRE_COSTO';
   const TIPO_MARKUP_SOBRE_COSTO = 'MARKUP_SOBRE_COSTO';
+  const TIPO_DESCUENTO_NINGUNO = 'NINGUNO';
+  const TIPO_DESCUENTO_PORCENTAJE = 'PORCENTAJE';
+  const DESCUENTO_NINGUNO_POR_DEFECTO = Object.freeze({tipo:TIPO_DESCUENTO_NINGUNO, porcentaje:null});
   const CAMPOS_RESULTADO_COSTOS = [
     'costoMateriales',
     'costoComponentes',
@@ -215,6 +218,92 @@ const ProyCutPricing = (function(){
       : {ok:true, resultadoPrecios};
   }
 
+  function validarDescuentoPorcentaje(descuento){
+    if(
+      !Object.prototype.hasOwnProperty.call(descuento, 'porcentaje') ||
+      descuento.porcentaje === undefined
+    ){
+      return crearError(
+        'DESCUENTO_PORCENTAJE_REQUERIDO',
+        'El descuento PORCENTAJE requiere un porcentaje explicito.'
+      );
+    }
+
+    const porcentaje = descuento.porcentaje;
+    if(typeof porcentaje !== 'number' || !Number.isFinite(porcentaje)){
+      return crearError(
+        'DESCUENTO_PORCENTAJE_INVALIDO',
+        'El porcentaje de descuento debe ser un numero finito.'
+      );
+    }
+
+    if(porcentaje < 0 || porcentaje > 100){
+      return crearError(
+        'DESCUENTO_PORCENTAJE_FUERA_DE_RANGO',
+        'El porcentaje de descuento debe estar entre 0 y 100.'
+      );
+    }
+
+    return null;
+  }
+
+  function aplicarDescuentoPrecio(precioBase, descuento){
+    if(
+      typeof precioBase !== 'number' ||
+      !Number.isFinite(precioBase) ||
+      precioBase < 0
+    ){
+      return {
+        ok:false,
+        errores:[crearError(
+          'PRECIO_BASE_INVALIDO',
+          'precioBase debe ser un numero finito no negativo.'
+        )]
+      };
+    }
+
+    if(!descuento || typeof descuento !== 'object' || Array.isArray(descuento)){
+      return {
+        ok:false,
+        errores:[crearError(
+          'TIPO_DESCUENTO_INVALIDO',
+          'El descuento debe ser un objeto con un tipo explicito.'
+        )]
+      };
+    }
+
+    if(descuento.tipo === TIPO_DESCUENTO_NINGUNO){
+      return {ok:true, descuentoAplicado:null, precioFinal:precioBase};
+    }
+
+    if(descuento.tipo === TIPO_DESCUENTO_PORCENTAJE){
+      const errorPorcentaje = validarDescuentoPorcentaje(descuento);
+      if(errorPorcentaje){
+        return {ok:false, errores:[errorPorcentaje]};
+      }
+
+      const porcentaje = descuento.porcentaje;
+      const monto = precioBase * porcentaje / 100;
+      return {
+        ok:true,
+        descuentoAplicado:{
+          tipo:TIPO_DESCUENTO_PORCENTAJE,
+          porcentaje,
+          monto
+        },
+        precioFinal:precioBase - monto
+      };
+    }
+
+    return {
+      ok:false,
+      errores:[crearError(
+        'TIPO_DESCUENTO_INVALIDO',
+        'El tipo de descuento debe ser NINGUNO o PORCENTAJE.'
+      )]
+    };
+  }
+
   function calcularPrecioGlobalSobreCosto(resultadoCostos, contextoComercial){
     if(
       !resultadoCostos ||
@@ -262,19 +351,27 @@ const ProyCutPricing = (function(){
     }
 
     const precioGlobal = resultadoCostos.costoTotal * (1 + porcentajeSobreCosto / 100);
+    const descuento = contextoComercial.descuento !== undefined
+      ? contextoComercial.descuento
+      : DESCUENTO_NINGUNO_POR_DEFECTO;
+    const resultadoDescuento = aplicarDescuentoPrecio(precioGlobal, descuento);
+    if(!resultadoDescuento.ok){
+      return {ok:false, errores:resultadoDescuento.errores};
+    }
+
     return {
       ok:true,
       resultadoPrecios:{
         metodoAplicado:METODO_GLOBAL_SOBRE_COSTO,
         precioBase:precioGlobal,
-        precioFinal:precioGlobal,
-        precioTotal:precioGlobal,
+        precioFinal:resultadoDescuento.precioFinal,
+        precioTotal:resultadoDescuento.precioFinal,
         porcentajeAplicado:{
           tipo:TIPO_MARKUP_SOBRE_COSTO,
           valor:porcentajeSobreCosto
         },
         desgloseCategorias:null,
-        descuentoAplicado:null,
+        descuentoAplicado:resultadoDescuento.descuentoAplicado,
         advertencias:[]
       }
     };
@@ -300,19 +397,28 @@ const ProyCutPricing = (function(){
     }
 
     const precioBase = contextoComercial.precioManual;
+    const descuento = contextoComercial.descuento !== undefined
+      ? contextoComercial.descuento
+      : DESCUENTO_NINGUNO_POR_DEFECTO;
+    const resultadoDescuento = aplicarDescuentoPrecio(precioBase, descuento);
+    if(!resultadoDescuento.ok){
+      return {ok:false, errores:resultadoDescuento.errores};
+    }
+
     return {
       ok:true,
       resultadoPrecio:{
         precioBase,
         metodoAplicado:METODO_PRECIO_FIJO,
-        descuentoAplicado:null,
-        precioFinal:precioBase,
+        descuentoAplicado:resultadoDescuento.descuentoAplicado,
+        precioFinal:resultadoDescuento.precioFinal,
         advertencias:[]
       }
     };
   }
 
   return {
-    calcularPrecioProyecto
+    calcularPrecioProyecto,
+    aplicarDescuentoPrecio
   };
 })();
