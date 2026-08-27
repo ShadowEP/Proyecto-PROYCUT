@@ -163,3 +163,83 @@ probar('Application propaga validacion matematica GLOBAL del Domain', () => {
     error.codigo === 'PORCENTAJE_SOBRE_COSTO_INVALIDO'
   )));
 });
+
+// ---------- P4B: ejemplo obligatorio GLOBAL + descuento (Domain real) ----------
+
+probar('caso obligatorio: costo 10000, markup 30%, descuento 10% -> base 13000, final 11700', () => {
+  const resultado = contextoPrueba.casoUsoIntegrado.calcularPrecioDelProyecto({
+    resultadoCostos:{
+      costoMateriales:6000,
+      costoComponentes:2000,
+      costoCorte:1500,
+      costoTapacanto:500,
+      costoTotal:10000
+    },
+    politicaPrecios:{
+      modo:'GLOBAL_SOBRE_COSTO',
+      porcentajeSobreCosto:30,
+      descuento:{tipo:'PORCENTAJE', porcentaje:10}
+    }
+  });
+
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.precioBase, 13000);
+  assert.strictEqual(resultado.resultadoPrecios.descuentoAplicado.monto, 1300);
+  assert.strictEqual(resultado.resultadoPrecios.precioFinal, 11700);
+  assert.strictEqual(resultado.resultadoPrecios.precioTotal, 11700);
+});
+
+probar('GLOBAL + descuento invalido produce error sin fallback a NINGUNO', () => {
+  const resultado = contextoPrueba.casoUsoIntegrado.calcularPrecioDelProyecto({
+    resultadoCostos:crearResultadoCostos(),
+    politicaPrecios:{
+      modo:'GLOBAL_SOBRE_COSTO',
+      porcentajeSobreCosto:30,
+      descuento:{tipo:'PORCENTAJE', porcentaje:-5}
+    }
+  });
+
+  assert.strictEqual(resultado.ok, false);
+  assert.ok(resultado.errores.some(error => error.codigo === 'DESCUENTO_PORCENTAJE_FUERA_DE_RANGO'));
+  assert.ok(!Object.prototype.hasOwnProperty.call(resultado, 'resultadoPrecios'));
+});
+
+probar('INDIVIDUAL + descuento via Domain real produce CATALOGO completo con descuento', () => {
+  const resultadoCostos = {
+    costoMateriales:750,
+    costoComponentes:80,
+    costoCorte:20,
+    costoTapacanto:10.5,
+    costoTotal:860.5,
+    materiales:[{sku:'T-000001', tableros:1}],
+    componentes:[{sku:'H-000001', cantidadTotal:2}],
+    tapacantos:[{sku:'E-000001', metrosCobrables:1}],
+    cortes:4,
+    corteMl:2
+  };
+  const catalogoComercial = {
+    materiales:[{sku:'T-000001', precioVenta:1200}],
+    componentes:[{sku:'H-000001', precioVenta:70}],
+    tapacantos:[{sku:'E-000001', precioVenta:18}],
+    corte:{modo:'corte', precioVentaCorte:12, precioVentaCorteMetro:30}
+  };
+
+  const resultado = contextoPrueba.casoUsoIntegrado.calcularPrecioDelProyecto({
+    resultadoCostos,
+    catalogoComercial,
+    politicaPrecios:{
+      modo:'INDIVIDUAL',
+      descuento:{tipo:'PORCENTAJE', porcentaje:10}
+    }
+  });
+
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.metodoAplicado, 'CATALOGO');
+  assert.strictEqual(resultado.resultadoPrecios.precioBase, 1406);
+  assert.strictEqual(resultado.resultadoPrecios.descuentoAplicado.monto, 140.6);
+  assert.strictEqual(resultado.resultadoPrecios.precioFinal, 1265.4);
+  assert.strictEqual(resultado.resultadoPrecios.precioTotal, 1265.4);
+  // los subtotales por categoria permanecen brutos
+  assert.strictEqual(resultado.resultadoPrecios.precioMateriales, 1200);
+  assert.strictEqual(resultado.resultadoPrecios.precioCorte, 48);
+});

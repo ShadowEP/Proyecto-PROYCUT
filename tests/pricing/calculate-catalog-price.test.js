@@ -51,10 +51,14 @@ probar('calcula ResultadoPrecios solo con valores comerciales separados', () => 
   assert.deepStrictEqual(
     JSON.parse(JSON.stringify(resultado.resultadoPrecios)),
     {
+      metodoAplicado:'CATALOGO',
       precioMateriales:1200,
       precioComponentes:140,
       precioCorte:48,
       precioTapacanto:18,
+      precioBase:1406,
+      descuentoAplicado:null,
+      precioFinal:1406,
       precioTotal:1406
     }
   );
@@ -335,4 +339,153 @@ probar('precio manual existente continua funcionando', () => {
   );
   assert.strictEqual(resultado.ok, true);
   assert.strictEqual(resultado.resultadoPrecio.precioFinal, 1500);
+});
+
+// ---------- P4B: CATALOGO completo + descuento ----------
+
+probar('CATALOGO completo + NINGUNO explicito produce el mismo resultado que sin descuento', () => {
+  const resultado = calcularPrecioProyecto(
+    crearResultadoCostos(),
+    {
+      metodo:'CATALOGO',
+      catalogoComercial:crearCatalogo(),
+      descuento:{tipo:'NINGUNO', porcentaje:null}
+    }
+  );
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.precioBase, 1406);
+  assert.strictEqual(resultado.resultadoPrecios.descuentoAplicado, null);
+  assert.strictEqual(resultado.resultadoPrecios.precioFinal, 1406);
+  assert.strictEqual(resultado.resultadoPrecios.precioTotal, 1406);
+});
+
+probar('CATALOGO completo + 0% produce precioFinal igual a precioBase con monto 0', () => {
+  const resultado = calcularPrecioProyecto(
+    crearResultadoCostos(),
+    {
+      metodo:'CATALOGO',
+      catalogoComercial:crearCatalogo(),
+      descuento:{tipo:'PORCENTAJE', porcentaje:0}
+    }
+  );
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.precioBase, 1406);
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(resultado.resultadoPrecios.descuentoAplicado)),
+    {tipo:'PORCENTAJE', porcentaje:0, monto:0}
+  );
+  assert.strictEqual(resultado.resultadoPrecios.precioFinal, 1406);
+  assert.strictEqual(resultado.resultadoPrecios.precioTotal, 1406);
+});
+
+probar('CATALOGO completo + 10% aplica el descuento sobre la suma bruta de categorias', () => {
+  const resultado = calcularPrecioProyecto(
+    crearResultadoCostos(),
+    {
+      metodo:'CATALOGO',
+      catalogoComercial:crearCatalogo(),
+      descuento:{tipo:'PORCENTAJE', porcentaje:10}
+    }
+  );
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.precioMateriales, 1200);
+  assert.strictEqual(resultado.resultadoPrecios.precioComponentes, 140);
+  assert.strictEqual(resultado.resultadoPrecios.precioCorte, 48);
+  assert.strictEqual(resultado.resultadoPrecios.precioTapacanto, 18);
+  assert.strictEqual(resultado.resultadoPrecios.precioBase, 1406);
+  assert.strictEqual(resultado.resultadoPrecios.descuentoAplicado.monto, 140.6);
+  assert.strictEqual(resultado.resultadoPrecios.precioFinal, 1265.4);
+  assert.strictEqual(resultado.resultadoPrecios.precioTotal, 1265.4);
+});
+
+probar('CATALOGO completo + decimal conserva precision exacta sin redondeo', () => {
+  const porcentaje = 12.5;
+  const resultado = calcularPrecioProyecto(
+    crearResultadoCostos(),
+    {
+      metodo:'CATALOGO',
+      catalogoComercial:crearCatalogo(),
+      descuento:{tipo:'PORCENTAJE', porcentaje}
+    }
+  );
+  const precioBase = 1406;
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.descuentoAplicado.monto, precioBase * porcentaje / 100);
+  assert.strictEqual(resultado.resultadoPrecios.precioFinal, precioBase - (precioBase * porcentaje / 100));
+});
+
+probar('CATALOGO completo + 100% produce precioFinal 0', () => {
+  const resultado = calcularPrecioProyecto(
+    crearResultadoCostos(),
+    {
+      metodo:'CATALOGO',
+      catalogoComercial:crearCatalogo(),
+      descuento:{tipo:'PORCENTAJE', porcentaje:100}
+    }
+  );
+  assert.strictEqual(resultado.ok, true);
+  assert.strictEqual(resultado.resultadoPrecios.descuentoAplicado.monto, 1406);
+  assert.strictEqual(resultado.resultadoPrecios.precioFinal, 0);
+  assert.strictEqual(resultado.resultadoPrecios.precioTotal, 0);
+  // los subtotales por categoria NUNCA se tocan, incluso con 100% de descuento
+  assert.strictEqual(resultado.resultadoPrecios.precioMateriales, 1200);
+  assert.strictEqual(resultado.resultadoPrecios.precioCorte, 48);
+});
+
+probar('CATALOGO completo + descuento invalido propaga el error del Domain sin fabricar precio', () => {
+  const resultado = calcularPrecioProyecto(
+    crearResultadoCostos(),
+    {
+      metodo:'CATALOGO',
+      catalogoComercial:crearCatalogo(),
+      descuento:{tipo:'PORCENTAJE', porcentaje:150}
+    }
+  );
+  assert.strictEqual(resultado.ok, false);
+  assert.ok(resultado.errores.some(error => error.codigo === 'DESCUENTO_PORCENTAJE_FUERA_DE_RANGO'));
+  assert.ok(!Object.prototype.hasOwnProperty.call(resultado, 'resultadoPrecios'));
+});
+
+probar('CATALOGO parcial ignora el descuento por completo y conserva el diagnostico historico', () => {
+  const catalogo = crearCatalogo();
+  catalogo.materiales[0].precioVenta = null;
+  const resultado = calcularPrecioProyecto(
+    crearResultadoCostos(),
+    {
+      metodo:'CATALOGO',
+      catalogoComercial:catalogo,
+      descuento:{tipo:'PORCENTAJE', porcentaje:10}
+    }
+  );
+  assert.strictEqual(resultado.ok, false);
+  assert.ok(resultado.errores.some(error => error.codigo === 'PRECIO_VENTA_INVALIDO'));
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(resultado.resultadoPrecios)),
+    {
+      precioMateriales:null,
+      precioComponentes:140,
+      precioCorte:48,
+      precioTapacanto:18,
+      precioTotal:206
+    }
+  );
+  assert.ok(!Object.prototype.hasOwnProperty.call(resultado.resultadoPrecios, 'metodoAplicado'));
+  assert.ok(!Object.prototype.hasOwnProperty.call(resultado.resultadoPrecios, 'precioBase'));
+  assert.ok(!Object.prototype.hasOwnProperty.call(resultado.resultadoPrecios, 'descuentoAplicado'));
+  assert.ok(!Object.prototype.hasOwnProperty.call(resultado.resultadoPrecios, 'precioFinal'));
+});
+
+probar('CATALOGO + descuento no muta resultadoCostos, catalogoComercial ni el objeto descuento', () => {
+  const resultadoCostos = crearResultadoCostos();
+  const catalogo = crearCatalogo();
+  const descuento = Object.freeze({tipo:'PORCENTAJE', porcentaje:10});
+  const costosAntes = JSON.stringify(resultadoCostos);
+  const catalogoAntes = JSON.stringify(catalogo);
+  const descuentoAntes = JSON.stringify(descuento);
+
+  calcularPrecioProyecto(resultadoCostos, {metodo:'CATALOGO', catalogoComercial:catalogo, descuento});
+
+  assert.strictEqual(JSON.stringify(resultadoCostos), costosAntes);
+  assert.strictEqual(JSON.stringify(catalogo), catalogoAntes);
+  assert.strictEqual(JSON.stringify(descuento), descuentoAntes);
 });
