@@ -233,9 +233,21 @@ probar('22. la formula de descuento existe una unica vez, solo en calculate-pric
     assert.ok(!codigo.includes('montoDescuento'));
     assert.ok(!/precioBase\s*\*\s*porcentaje/.test(codigo));
   });
-  // main.js y Application (P4B) solo transportan la politica de entrada (descuento);
-  // nunca conocen el resultado calculado por Domain (descuentoAplicado). Eso llega en P4C.
-  assert.ok(!fs.readFileSync(rutaMain, 'utf8').includes('descuentoAplicado'));
+  // Presentation puede leer el resultado canónico para mostrarlo, pero no calcularlo.
+  const codigoMain = fs.readFileSync(rutaMain, 'utf8');
+  assert.ok(codigoMain.includes('resultadoPrecios.descuentoAplicado'));
+  assert.ok(codigoMain.includes('descuentoAplicado.monto'));
+  assert.ok(codigoMain.includes('descuentoAplicado.porcentaje'));
+  [
+    /descuentoAplicado\.(?:monto|porcentaje)\s*=/,
+    /descuentoAplicado\.(?:monto|porcentaje)\s*[+\-*/]/,
+    /[+\-*/]\s*descuentoAplicado\.(?:monto|porcentaje)/,
+    /Math\.round\s*\([^)]*descuentoAplicado/,
+    /descuentoAplicado[^;\n]*\.toFixed\s*\(/,
+    /porcentajeDescuento\s*(?:<=|>=|<|>)/
+  ].forEach(patron => assert.ok(!patron.test(codigoMain)));
+
+  // Application solo transporta la política de entrada.
   assert.ok(!fs.readFileSync(rutaCasoUso, 'utf8').includes('descuentoAplicado'));
   // Profitability (P4B) SI necesita detectar la forma de descuentoAplicado para decidir
   // precioConsiderado, pero nunca debe leer su monto ni su porcentaje (no calcula descuento).

@@ -60,6 +60,8 @@ function crearEscenario(){
     precioCorteMetro:{value:'0'},
     usarUtilidadGlobalProyecto:{checked:false},
     porcentajeUtilidadGlobalProyecto:{value:'30'},
+    aplicarDescuentoProyecto:{checked:false},
+    porcentajeDescuentoProyecto:{value:'10'},
     incluirCostoCorteRentabilidad:{checked:true},
     incluirPrecioCorteRentabilidad:{checked:true},
     incluirCostoTapacantoRentabilidad:{checked:true},

@@ -139,6 +139,8 @@ probar('COSTOS 4 x 700 y PRECIOS 4 x 1000 conservan identidad y cantidad', () =>
     precioVentaCorteMetro:{value:''},
     usarUtilidadGlobalProyecto:{checked:false},
     porcentajeUtilidadGlobalProyecto:{value:'30'},
+    aplicarDescuentoProyecto:{checked:false},
+    porcentajeDescuentoProyecto:{value:'10'},
     incluirCostoCorteRentabilidad:{checked:true},
     incluirPrecioCorteRentabilidad:{checked:true},
     incluirCostoTapacantoRentabilidad:{checked:true},

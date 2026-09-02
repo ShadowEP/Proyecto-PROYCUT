@@ -4807,6 +4807,11 @@
     actualizarPrecioCatalogoVisible();
   });
   document.getElementById('porcentajeUtilidadGlobalProyecto').addEventListener('input', actualizarPrecioCatalogoVisible);
+  document.getElementById('aplicarDescuentoProyecto').addEventListener('change', () => {
+    actualizarDisponibilidadPreciosProyecto();
+    actualizarPrecioCatalogoVisible();
+  });
+  document.getElementById('porcentajeDescuentoProyecto').addEventListener('input', actualizarPrecioCatalogoVisible);
   document.getElementById('nivelOptimizacionNormal').addEventListener('change', recalcularDebounced);
   document.getElementById('nivelOptimizacionOptimizada').addEventListener('change', recalcularDebounced);
   document.getElementById('nivelOptimizacionCompleta').addEventListener('change', recalcularDebounced);
@@ -5584,19 +5589,29 @@
     const usarGlobal = document.getElementById('usarUtilidadGlobalProyecto').checked;
     const valorPorcentaje = document.getElementById('porcentajeUtilidadGlobalProyecto').value;
     const porcentajeSobreCosto = valorPorcentaje === '' ? null : Number(valorPorcentaje);
+    const aplicarDescuento = document.getElementById('aplicarDescuentoProyecto').checked;
+    const valorDescuento = document.getElementById('porcentajeDescuentoProyecto').value;
+    const porcentajeDescuento = valorDescuento === '' ? null : Number(valorDescuento);
     return {
       modo:usarGlobal ? 'GLOBAL_SOBRE_COSTO' : 'INDIVIDUAL',
-      porcentajeSobreCosto
+      porcentajeSobreCosto,
+      descuento:{
+        tipo:aplicarDescuento ? 'PORCENTAJE' : 'NINGUNO',
+        porcentaje:aplicarDescuento ? porcentajeDescuento : null
+      }
     };
   }
 
   function actualizarDisponibilidadPreciosProyecto(){
     const usarGlobal = document.getElementById('usarUtilidadGlobalProyecto').checked;
+    const aplicarDescuento = document.getElementById('aplicarDescuentoProyecto').checked;
     document.getElementById('porcentajeUtilidadGlobalProyecto').disabled = !usarGlobal;
-    document.getElementById('incluirPrecioCorteRentabilidad').disabled = usarGlobal;
-    document.getElementById('incluirPrecioTapacantoRentabilidad').disabled = usarGlobal;
+    document.getElementById('porcentajeDescuentoProyecto').disabled = !aplicarDescuento;
+    const flagsPrecioNoAplicables = usarGlobal || aplicarDescuento;
+    document.getElementById('incluirPrecioCorteRentabilidad').disabled = flagsPrecioNoAplicables;
+    document.getElementById('incluirPrecioTapacantoRentabilidad').disabled = flagsPrecioNoAplicables;
     const aviso = document.getElementById('avisoRentabilidadPrecioGlobal');
-    if(aviso) aviso.hidden = !usarGlobal;
+    if(aviso) aviso.hidden = !flagsPrecioNoAplicables;
   }
 
   function actualizarResultadoRentabilidad(
@@ -5860,7 +5875,9 @@
           subtotal:resultadoPrecios.precioCorte
         }])
       ],
-      total:resultadoPrecios.precioTotal
+      total:typeof resultadoPrecios.precioBase === 'number'
+        ? resultadoPrecios.precioBase
+        : resultadoPrecios.precioTotal
     };
   }
 
@@ -5870,6 +5887,23 @@
       construirResumenCostos(resultadoCostos),
       'Costo total'
     );
+  }
+
+  function renderLineaDescuento(descuentoAplicado){
+    if(!descuentoAplicado || typeof descuentoAplicado !== 'object' || Array.isArray(descuentoAplicado)){
+      return '';
+    }
+    const etiqueta = 'Descuento (' + fmt(descuentoAplicado.porcentaje) + ' %)';
+    return '<div class="config-row">' +
+      campoEconomico(etiqueta, '-' + valorEconomicoPresentado(descuentoAplicado.monto)) +
+      '</div>';
+  }
+
+  function renderBloquePrecioFinal(resultadoPrecios){
+    return renderLineaDescuento(resultadoPrecios.descuentoAplicado) +
+      '<div class="' + claseTotalResumen() + '">' +
+      '<span class="label">Precio final</span>' +
+      '<span class="amount">' + valorEconomicoPresentado(resultadoPrecios.precioFinal) + '</span></div>';
   }
 
   function renderResumenPrecioGlobal(contenedorId, resultadoCostos, resultadoPrecios){
@@ -5882,10 +5916,9 @@
       campoEconomico('Método', 'Utilidad global sobre costo') +
       campoEconomico('Costo base', valorEconomicoPresentado(resultadoCostos && resultadoCostos.costoTotal)) +
       campoEconomico('Utilidad sobre costo', porcentaje === null ? '—' : (fmt(porcentaje) + ' %')) +
+      campoEconomico('Precio base', valorEconomicoPresentado(resultadoPrecios.precioBase)) +
       '</div>' +
-      '<div class="' + claseTotalResumen() + '">' +
-      '<span class="label">Precio de venta</span>' +
-      '<span class="amount">' + valorEconomicoPresentado(resultadoPrecios.precioFinal) + '</span></div>';
+      renderBloquePrecioFinal(resultadoPrecios);
     document.getElementById(contenedorId).innerHTML = contenido;
   }
 
@@ -5898,8 +5931,11 @@
     renderResumenEconomico(
       'resumenPreciosContenido',
       resultadoPrecios ? construirResumenPrecios(resultadoCostos, resultadoPrecios) : null,
-      'Precio venta total'
+      'Precio base'
     );
+    if(resultadoPrecios && resultadoPrecios.metodoAplicado === 'CATALOGO'){
+      document.getElementById('resumenPreciosContenido').innerHTML += renderBloquePrecioFinal(resultadoPrecios);
+    }
   }
 
   function limpiarResumenPrecios(){
