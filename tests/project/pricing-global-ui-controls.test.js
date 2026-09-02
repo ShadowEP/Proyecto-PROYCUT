@@ -74,6 +74,11 @@ function crearEscenario(opciones = {}){
       opciones.porcentaje === undefined ? '30' : opciones.porcentaje,
       true
     ),
+    aplicarDescuentoProyecto:crearControl(Boolean(opciones.aplicarDescuento)),
+    porcentajeDescuentoProyecto:crearCampoNumerico(
+      opciones.descuento === undefined ? '10' : opciones.descuento,
+      !opciones.aplicarDescuento
+    ),
     avisoRentabilidadPrecioGlobal:{hidden:true},
     toggleServiciosRentabilidad:crearControl(true),
     incluirCostoCorteRentabilidad:crearControl(true),
@@ -139,6 +144,10 @@ function crearEscenario(opciones = {}){
   if(opciones.usarGlobal){
     elementos.usarUtilidadGlobalProyecto.checked = true;
     elementos.usarUtilidadGlobalProyecto.listeners.change();
+  }
+  if(opciones.aplicarDescuento){
+    elementos.aplicarDescuentoProyecto.checked = true;
+    elementos.aplicarDescuentoProyecto.listeners.change();
   }
 
   return {contexto, elementos, state};
@@ -226,7 +235,11 @@ probar('10. OFF construye modo INDIVIDUAL', () => {
   const escenario = crearEscenario({usarGlobal:false, porcentaje:'30'});
   assert.deepStrictEqual(
     JSON.parse(JSON.stringify(escenario.contexto.leerPoliticaPrecios())),
-    {modo:'INDIVIDUAL', porcentajeSobreCosto:30}
+    {
+      modo:'INDIVIDUAL',
+      porcentajeSobreCosto:30,
+      descuento:{tipo:'NINGUNO', porcentaje:null}
+    }
   );
 });
 
@@ -234,7 +247,11 @@ probar('11. ON construye modo GLOBAL_SOBRE_COSTO', () => {
   const escenario = crearEscenario({usarGlobal:true, porcentaje:'30'});
   assert.deepStrictEqual(
     JSON.parse(JSON.stringify(escenario.contexto.leerPoliticaPrecios())),
-    {modo:'GLOBAL_SOBRE_COSTO', porcentajeSobreCosto:30}
+    {
+      modo:'GLOBAL_SOBRE_COSTO',
+      porcentajeSobreCosto:30,
+      descuento:{tipo:'NINGUNO', porcentaje:null}
+    }
   );
 });
 
@@ -336,7 +353,8 @@ probar('22. UI global no muestra desglose comercial ficticio', () => {
   });
   assert.ok(contenido.includes('Utilidad global sobre costo'));
   assert.ok(contenido.includes('Costo base'));
-  assert.ok(contenido.includes('Precio de venta'));
+  assert.ok(contenido.includes('Precio base'));
+  assert.ok(contenido.includes('Precio final'));
 });
 
 probar('23. Precio final global se muestra correctamente', () => {
@@ -437,4 +455,121 @@ probar('caso obligatorio: costoTotal 10000, GLOBAL 30% => precioFinal 13000 y re
   assert.strictEqual(rentabilidad.utilidad, 3000);
   assert.strictEqual(rentabilidad.markupPorcentaje, 30);
   assert.strictEqual(rentabilidad.margenPorcentaje, (3000 / 13000) * 100);
+});
+
+probar('P4C INDIVIDUAL 10% usa precio base 1500 y final 1350', () => {
+  const escenario = crearEscenario({aplicarDescuento:true, descuento:'10'});
+  assert.strictEqual(escenario.contexto.actualizarPrecios(), true);
+  const precios = escenario.contexto.obtenerPrecios();
+  assert.strictEqual(precios.precioBase, 1500);
+  assert.strictEqual(precios.descuentoAplicado.monto, 150);
+  assert.strictEqual(precios.precioFinal, 1350);
+  const contenido = escenario.elementos.resumenPreciosContenido.innerHTML;
+  assert.ok(contenido.includes('Precio base'));
+  assert.ok(contenido.includes('Descuento'));
+  assert.ok(contenido.includes('Precio final'));
+});
+
+probar('P4C cambios de descuento ejecutan Pricing y Profitability una vez sin alterar Costing', () => {
+  const escenario = crearEscenario();
+  escenario.contexto.actualizarPrecios();
+  const costosAntes = JSON.stringify(escenario.state.ultimoCosto);
+  let pricingAntes = escenario.contexto.llamadasPricing;
+  let profitabilityAntes = escenario.contexto.llamadasProfitability;
+  escenario.elementos.aplicarDescuentoProyecto.checked = true;
+  escenario.elementos.aplicarDescuentoProyecto.listeners.change();
+  assert.strictEqual(escenario.contexto.llamadasPricing, pricingAntes + 1);
+  assert.strictEqual(escenario.contexto.llamadasProfitability, profitabilityAntes + 1);
+  assert.strictEqual(JSON.stringify(escenario.state.ultimoCosto), costosAntes);
+  pricingAntes = escenario.contexto.llamadasPricing;
+  profitabilityAntes = escenario.contexto.llamadasProfitability;
+  escenario.elementos.porcentajeDescuentoProyecto.value = '12.5';
+  escenario.elementos.porcentajeDescuentoProyecto.listeners.input();
+  assert.strictEqual(escenario.contexto.llamadasPricing, pricingAntes + 1);
+  assert.strictEqual(escenario.contexto.llamadasProfitability, profitabilityAntes + 1);
+  assert.strictEqual(JSON.stringify(escenario.state.ultimoCosto), costosAntes);
+});
+
+probar('P4C GLOBAL 30% y descuento 10% respeta costo, markup y descuento', () => {
+  const escenario = crearEscenario({
+    usarGlobal:true,
+    porcentaje:'30',
+    costoTotal:10000,
+    aplicarDescuento:true,
+    descuento:'10'
+  });
+  assert.strictEqual(escenario.contexto.actualizarPrecios(), true);
+  const precios = escenario.contexto.obtenerPrecios();
+  assert.strictEqual(precios.precioBase, 13000);
+  assert.strictEqual(precios.descuentoAplicado.monto, 1300);
+  assert.strictEqual(precios.precioFinal, 11700);
+  const contenido = escenario.elementos.resumenPreciosContenido.innerHTML;
+  assert.ok(contenido.includes('Método'));
+  assert.ok(contenido.includes('Costo base'));
+  assert.ok(contenido.includes('Utilidad sobre costo'));
+  assert.ok(contenido.includes('Precio base'));
+  assert.ok(contenido.includes('Descuento'));
+  assert.ok(contenido.includes('Precio final'));
+});
+
+probar('P4C acepta descuento 0 y decimal', () => {
+  const cero = crearEscenario({aplicarDescuento:true, descuento:'0'});
+  assert.strictEqual(cero.contexto.actualizarPrecios(), true);
+  assert.strictEqual(cero.contexto.obtenerPrecios().precioFinal, 1500);
+  const decimal = crearEscenario({aplicarDescuento:true, descuento:'12.5'});
+  assert.strictEqual(decimal.contexto.actualizarPrecios(), true);
+  assert.strictEqual(decimal.contexto.obtenerPrecios().precioFinal, 1312.5);
+});
+
+probar('P4C errores vacio negativo y mayor a 100 invalidan precio y rentabilidad sin fallback', () => {
+  ['', '-1', '101'].forEach(descuento => {
+    const escenario = crearEscenario({aplicarDescuento:true, descuento:'10'});
+    assert.strictEqual(escenario.contexto.actualizarPrecios(), true);
+    escenario.elementos.porcentajeDescuentoProyecto.value = descuento;
+    assert.strictEqual(escenario.contexto.actualizarPrecios(), false);
+    assert.strictEqual(escenario.contexto.obtenerPrecios(), null);
+    assert.strictEqual(escenario.contexto.obtenerRentabilidad().estado, 'DATOS_INVALIDOS');
+    assert.strictEqual(escenario.contexto.leerPoliticaPrecios().descuento.tipo, 'PORCENTAJE');
+  });
+});
+
+probar('P4C apagar descuento recupera precio base sin limpiar valor', () => {
+  const escenario = crearEscenario({aplicarDescuento:true, descuento:'10'});
+  assert.strictEqual(escenario.contexto.actualizarPrecios(), true);
+  escenario.elementos.aplicarDescuentoProyecto.checked = false;
+  escenario.elementos.aplicarDescuentoProyecto.listeners.change();
+  assert.strictEqual(escenario.elementos.porcentajeDescuentoProyecto.value, '10');
+  assert.strictEqual(escenario.elementos.porcentajeDescuentoProyecto.disabled, true);
+  assert.strictEqual(escenario.contexto.obtenerPrecios().precioFinal, 1500);
+});
+
+probar('P4C descuento y GLOBAL centralizan disabled de flags de precio', () => {
+  const escenario = crearEscenario();
+  escenario.elementos.incluirPrecioCorteRentabilidad.checked = false;
+  escenario.elementos.aplicarDescuentoProyecto.checked = true;
+  escenario.elementos.aplicarDescuentoProyecto.listeners.change();
+  assert.strictEqual(escenario.elementos.incluirPrecioCorteRentabilidad.disabled, true);
+  assert.strictEqual(escenario.elementos.incluirPrecioTapacantoRentabilidad.disabled, true);
+  assert.strictEqual(escenario.elementos.incluirPrecioCorteRentabilidad.checked, false);
+  assert.ok(!escenario.elementos.incluirCostoCorteRentabilidad.disabled);
+  assert.ok(!escenario.elementos.incluirCostoTapacantoRentabilidad.disabled);
+  escenario.elementos.usarUtilidadGlobalProyecto.checked = true;
+  escenario.elementos.aplicarDescuentoProyecto.checked = false;
+  escenario.elementos.aplicarDescuentoProyecto.listeners.change();
+  assert.strictEqual(escenario.elementos.incluirPrecioCorteRentabilidad.disabled, true);
+  escenario.elementos.usarUtilidadGlobalProyecto.checked = false;
+  escenario.elementos.usarUtilidadGlobalProyecto.listeners.change();
+  assert.strictEqual(escenario.elementos.incluirPrecioCorteRentabilidad.disabled, false);
+  assert.strictEqual(escenario.elementos.incluirPrecioCorteRentabilidad.checked, false);
+});
+
+probar('P4C master P2 cambia checked pero no habilita flags de precio con descuento', () => {
+  const escenario = crearEscenario({aplicarDescuento:true, descuento:'10'});
+  const master = escenario.elementos.toggleServiciosRentabilidad;
+  master.checked = false;
+  master.listeners.change();
+  assert.strictEqual(escenario.elementos.incluirPrecioCorteRentabilidad.checked, false);
+  assert.strictEqual(escenario.elementos.incluirPrecioTapacantoRentabilidad.checked, false);
+  assert.strictEqual(escenario.elementos.incluirPrecioCorteRentabilidad.disabled, true);
+  assert.strictEqual(escenario.elementos.incluirPrecioTapacantoRentabilidad.disabled, true);
 });

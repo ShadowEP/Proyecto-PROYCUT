@@ -81,6 +81,8 @@ function crearEscenario(){
     precioCorteMetro:{value:'0'},
     usarUtilidadGlobalProyecto:crearControl(false),
     porcentajeUtilidadGlobalProyecto:crearCampoNumerico('30', true),
+    aplicarDescuentoProyecto:crearControl(false),
+    porcentajeDescuentoProyecto:crearCampoNumerico('10', true),
     avisoRentabilidadPrecioGlobal:{hidden:true},
     toggleServiciosRentabilidad:crearControl(true)
   };
